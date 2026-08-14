@@ -1,0 +1,16 @@
+{
+  "name": "perix-root",
+  "version": "1.0.0",
+  "description": "PeriX - AI Food Supply Chain & Surplus Rebalancing Platform",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:backend": "npm --prefix backend run build",
+    "build": "npm run build:frontend && npm run build:backend",
+    "install:all": "npm --prefix frontend install && npm --prefix backend install"
+  },
+  "keywords": ["food-supply-chain", "ai", "agri-tech", "perix"],
+  "author": "",
+  "license": "MIT"
+}

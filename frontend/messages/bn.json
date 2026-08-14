@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "খামার থেকে খাবার থালা পর্যন্ত"
+  },
+  "nav": {
+    "dashboard": "ড্যাশবোর্ড",
+    "marketplace": "মার্কেটপ্লেস",
+    "inventory": "মজুদ পণ্য",
+    "orders": "অর্ডারসমূহ",
+    "analytics": "অ্যানালিটিক্স",
+    "settings": "সেটিংস",
+    "logout": "লগআউট"
+  },
+  "auth": {
+    "login": "সাইন ইন",
+    "register": "অ্যাকাউন্ট তৈরি করুন",
+    "googleLogin": "Google দিয়ে চালিয়ে যান",
+    "email": "ইমেল ঠিকানা",
+    "password": "পাসওয়ার্ড",
+    "name": "পুরো নাম",
+    "noAccount": "অ্যাকাউন্ট নেই?",
+    "hasAccount": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
+    "selectRole": "আপনার ভূমিকা বেছে নিন",
+    "roleDescription": "খাদ্য সরবরাহ শৃঙ্খলে আপনার ভূমিকা নির্বাচন করুন"
+  },
+  "roles": {
+    "farmer": "কৃষক",
+    "farmerDesc": "কৃষি ফসল উৎপাদন ও সরবরাহ করুন",
+    "mandi": "কমিশন এজেন্ট (মান্ডি)",
+    "mandiDesc": "কৃষকদের পাইকারি বিক্রেতাদের সাথে যুক্ত করুন",
+    "wholesaler": "পাইকারি বিক্রেতা",
+    "wholesalerDesc": "খুচরা বিক্রেতাদের কাছে পণ্য বিতরণ করুন",
+    "retailer": "খুচরা বিক্রেতা",
+    "retailerDesc": "সরাসরি ভোক্তাদের কাছে বিক্রি করুন",
+    "admin": "প্রশাসক"
+  },
+  "dashboard": {
+    "welcome": "স্বাগতম",
+    "overview": "সংক্ষিপ্ত বিবরণ",
+    "totalRevenue": "মোট আয়",
+    "totalOrders": "মোট অর্ডার",
+    "activeItems": "সক্রিয় পণ্য",
+    "wasteReduction": "অপচয় হ্রাস",
+    "demandForecast": "চাহিদার পূর্বাভাস",
+    "priceTrends": "দামের প্রবণতা",
+    "recentActivity": "সাম্প্রতিক কার্যকলাপ",
+    "aiInsights": "AI অন্তর্দৃষ্টি",
+    "tips": "সুপারিশ"
+  },
+  "farmer": {
+    "myCrops": "আমার ফসল",
+    "addCrop": "ফসল যোগ করুন",
+    "cropName": "ফসলের নাম",
+    "quantity": "পরিমাণ (কেজি)",
+    "quality": "গুণমান গ্রেড",
+    "harvestDate": "প্রত্যাশিত ফসল কাটার তারিখ",
+    "location": "খামারের অবস্থান",
+    "state": "রাজ্য",
+    "district": "জেলা",
+    "landArea": "জমির পরিমাণ (একর)",
+    "storage": "সংরক্ষণাগার ধরন",
+    "openField": "উন্মুক্ত মাঠ",
+    "coldStorage": "কোল্ড স্টোরেজ",
+    "warehouse": "গুদাম",
+    "marketPrices": "বর্তমান বাজার দর",
+    "bestTimeToSell": "বিক্রির সেরা সময়",
+    "nearestMandi": "নিকটবর্তী মান্ডি"
+  },
+  "mandi": {
+    "currentStock": "বর্তমান মজুদ",
+    "addStock": "মজুদ যোগ করুন",
+    "commodity": "পণ্য",
+    "buyPrice": "ক্রয় মূল্য (₹/কেজি)",
+    "sellPrice": "বিক্রয় মূল্য (₹/কেজি)",
+    "connectedWholesalers": "সংযুক্ত পাইকাররা",
+    "distributionRoutes": "বিতরণ রুট",
+    "demandForProducts": "পণ্যের চাহিদা"
+  },
+  "wholesaler": {
+    "inventory": "মজুদ তালিকা",
+    "addInventory": "মজুদ যোগ করুন",
+    "storageCapacity": "সংরক্ষণ ক্ষমতা",
+    "coldChain": "কোল্ড চেইন স্থিতি",
+    "demandRequirements": "চাহিদার প্রয়োজনীয়তা",
+    "distributionNetwork": "বিতরণ নেটওয়ার্ক",
+    "active": "সক্রিয়",
+    "inactive": "নিষ্ক্রিয়"
+  },
+  "common": {
+    "save": "সংরক্ষণ করুন",
+    "cancel": "বাতিল করুন",
+    "delete": "মুছে ফেলুন",
+    "edit": "সম্পাদনা করুন",
+    "search": "অনুসন্ধান করুন",
+    "filter": "ফিল্টার",
+    "loading": "লোড হচ্ছে...",
+    "noData": "কোন তথ্য নেই",
+    "success": "সফল",
+    "error": "ত্রুটি",
+    "confirm": "নিশ্চিত করুন",
+    "status": "স্থিতি",
+    "date": "তারিখ",
+    "price": "মূল্য",
+    "available": "উপলব্ধ",
+    "sold": "বিক্রি হয়েছে",
+    "expired": "মেয়াদোত্তীর্ণ",
+    "pending": "অপেক্ষারত",
+    "confirmed": "নিশ্চিত",
+    "inTransit": "পরিবহনে আছে",
+    "delivered": "বিতরণ সম্পন্ন"
+  }
+}

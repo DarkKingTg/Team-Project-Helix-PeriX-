@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "ஸ்மார்ட் உணவு வழங்கல் சங்கிலி"
+  },
+  "nav": {
+    "dashboard": "டாஷ்போர்டு",
+    "marketplace": "சந்தை",
+    "inventory": "சரக்கு",
+    "orders": "ஆர்டர்கள்",
+    "analytics": "பகுப்பாய்வு",
+    "settings": "அமைப்புகள்",
+    "logout": "வெளியேறு"
+  },
+  "auth": {
+    "login": "உள்நுழைக",
+    "register": "கணக்கை உருவாக்கவும்",
+    "googleLogin": "Google மூலம் தொடரவும்",
+    "email": "மின்னஞ்சல் முகவரி",
+    "password": "கடவுச்சொல்",
+    "name": "முழு பெயர்",
+    "noAccount": "கணக்கு இல்லையா?",
+    "hasAccount": "ஏற்கனவே கணக்கு உள்ளதா?",
+    "selectRole": "உங்கள் பாத்திரத்தை தேர்ந்தெடுக்கவும்",
+    "roleDescription": "உணவு வழங்கல் சங்கிலியில் உங்கள் பங்கேற்பைத் தேர்ந்தெடுக்கவும்"
+  },
+  "roles": {
+    "farmer": "விவசாயி",
+    "farmerDesc": "விவசாய விளைபொருட்களை விளைவித்து வழங்குங்கள்",
+    "mandi": "கமிஷன் முகவர் (மண்டி)",
+    "mandiDesc": "விவசாயிகளை மொத்த விற்பனையாளர்களுடன் இணைக்கவும்",
+    "wholesaler": "மொத்த விற்பனையாளர்",
+    "wholesalerDesc": "சில்லறை விற்பனையாளர்களுக்கு பொருட்களை விநியோகிக்கவும்",
+    "retailer": "சில்லறை விற்பனையாளர்",
+    "retailerDesc": "நேரடியாக நுகர்வோருக்கு விற்கவும்",
+    "admin": "நிர்வாகி"
+  },
+  "dashboard": {
+    "welcome": "மீண்டும் வரவேற்கிறோம்",
+    "overview": "மேலோட்டம்",
+    "totalRevenue": "மொத்த வருவாய்",
+    "totalOrders": "மொத்த ஆர்டர்கள்",
+    "activeItems": "செயலில் உள்ள பொருட்கள்",
+    "wasteReduction": "கழிவு குறைப்பு",
+    "demandForecast": "தேவை முன்கணிப்பு",
+    "priceTrends": "விலை போக்குகள்",
+    "recentActivity": "சமீபத்திய செயல்பாடு",
+    "aiInsights": "AI நுண்ணறிவு",
+    "tips": "பரிந்துரைகள்"
+  },
+  "farmer": {
+    "myCrops": "என் பயிர்கள்",
+    "addCrop": "பயிர் சேர்க்க",
+    "cropName": "பயிர் பெயர்",
+    "quantity": "அளவு (கிலோ)",
+    "quality": "தர வகுப்பு",
+    "harvestDate": "எதிர்பார்க்கப்படும் அறுவடை தேதி",
+    "location": "பண்ணை இடம்",
+    "state": "மாநிலம்",
+    "district": "மாவட்டம்",
+    "landArea": "நில பரப்பளவு (ஏக்கர்)",
+    "storage": "சேமிப்பு வகை",
+    "openField": "திறந்த வெளி",
+    "coldStorage": "குளிர் சேமிப்பு",
+    "warehouse": "கிடங்கு",
+    "marketPrices": "தற்போதைய சந்தை விலைகள்",
+    "bestTimeToSell": "விற்க சிறந்த நேரம்",
+    "nearestMandi": "அருகிலுள்ள மண்டி"
+  },
+  "mandi": {
+    "currentStock": "தற்போதைய பங்கு",
+    "addStock": "பங்கு சேர்க்க",
+    "commodity": "பொருள்",
+    "buyPrice": "வாங்கும் விலை (₹/கிலோ)",
+    "sellPrice": "விற்பனை விலை (₹/கிலோ)",
+    "connectedWholesalers": "இணைக்கப்பட்ட மொத்த விற்பனையாளர்கள்",
+    "distributionRoutes": "விநியோக வழிகள்",
+    "demandForProducts": "பொருட்களுக்கான தேவை"
+  },
+  "wholesaler": {
+    "inventory": "சரக்கு",
+    "addInventory": "சரக்கு சேர்க்க",
+    "storageCapacity": "சேமிப்பு திறன்",
+    "coldChain": "குளிர் சங்கிலி நிலை",
+    "demandRequirements": "தேவை தேவைகள்",
+    "distributionNetwork": "விநியோக நெட்வொர்க்",
+    "active": "செயலில்",
+    "inactive": "செயலற்றது"
+  },
+  "common": {
+    "save": "சேமி",
+    "cancel": "ரத்துசெய்",
+    "delete": "நீக்கு",
+    "edit": "திருத்து",
+    "search": "தேடு",
+    "filter": "வடிகட்டு",
+    "loading": "ஏற்றுகிறது...",
+    "noData": "தரவு இல்லை",
+    "success": "வெற்றி",
+    "error": "பிழை",
+    "confirm": "உறுதிசெய்",
+    "status": "நிலை",
+    "date": "தேதி",
+    "price": "விலை",
+    "available": "கிடைக்கும்",
+    "sold": "விற்கப்பட்டது",
+    "expired": "காலாவதியானது",
+    "pending": "நிலுவையில்",
+    "confirmed": "உறுதிசெய்யப்பட்டது",
+    "inTransit": "போக்குவரத்தில்",
+    "delivered": "வழங்கப்பட்டது"
+  }
+}

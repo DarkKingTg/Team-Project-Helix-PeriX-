@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "From Farm to Fork"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "marketplace": "Marketplace",
+    "inventory": "Inventory",
+    "orders": "Orders",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "googleLogin": "Continue with Google",
+    "email": "Email Address",
+    "password": "Password",
+    "name": "Full Name",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "selectRole": "Select Your Role",
+    "roleDescription": "Choose how you participate in the food supply chain"
+  },
+  "roles": {
+    "farmer": "Farmer",
+    "farmerDesc": "Grow and supply agricultural produce",
+    "mandi": "Commission Agent (Mandi)",
+    "mandiDesc": "Connect farmers with wholesalers",
+    "wholesaler": "Wholesaler",
+    "wholesalerDesc": "Distribute goods to retailers",
+    "retailer": "Retailer",
+    "retailerDesc": "Sell directly to consumers",
+    "admin": "Administrator"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "totalRevenue": "Total Revenue",
+    "totalOrders": "Total Orders",
+    "activeItems": "Active Items",
+    "wasteReduction": "Waste Reduction",
+    "demandForecast": "Demand Forecast",
+    "priceTrends": "Price Trends",
+    "recentActivity": "Recent Activity",
+    "aiInsights": "AI Insights",
+    "tips": "Recommendations"
+  },
+  "farmer": {
+    "myCrops": "My Crops",
+    "addCrop": "Add Crop",
+    "cropName": "Crop Name",
+    "quantity": "Quantity (kg)",
+    "quality": "Quality Grade",
+    "harvestDate": "Expected Harvest Date",
+    "location": "Farm Location",
+    "state": "State",
+    "district": "District",
+    "landArea": "Land Area (acres)",
+    "storage": "Storage Type",
+    "openField": "Open Field",
+    "coldStorage": "Cold Storage",
+    "warehouse": "Warehouse",
+    "marketPrices": "Current Market Prices",
+    "bestTimeToSell": "Best Time to Sell",
+    "nearestMandi": "Nearest Mandi"
+  },
+  "mandi": {
+    "currentStock": "Current Stock",
+    "addStock": "Add Stock",
+    "commodity": "Commodity",
+    "buyPrice": "Buy Price (₹/kg)",
+    "sellPrice": "Sell Price (₹/kg)",
+    "connectedWholesalers": "Connected Wholesalers",
+    "distributionRoutes": "Distribution Routes",
+    "demandForProducts": "Demand for Products"
+  },
+  "wholesaler": {
+    "inventory": "Inventory",
+    "addInventory": "Add Inventory",
+    "storageCapacity": "Storage Capacity",
+    "coldChain": "Cold Chain Status",
+    "demandRequirements": "Demand Requirements",
+    "distributionNetwork": "Distribution Network",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "success": "Success",
+    "error": "Error",
+    "confirm": "Confirm",
+    "status": "Status",
+    "date": "Date",
+    "price": "Price",
+    "available": "Available",
+    "sold": "Sold",
+    "expired": "Expired",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "inTransit": "In Transit",
+    "delivered": "Delivered"
+  }
+}

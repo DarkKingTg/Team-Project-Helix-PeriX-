@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "ખેતરથી થાળી સુધી"
+  },
+  "nav": {
+    "dashboard": "ડેશબોર્ડ",
+    "marketplace": "માર્કેટપ્લેસ",
+    "inventory": "ઇન્વેન્ટરી",
+    "orders": "ઓર્ડર્સ",
+    "analytics": "એનાલિટિક્સ",
+    "settings": "સેટિંગ્સ",
+    "logout": "લૉગ આઉટ"
+  },
+  "auth": {
+    "login": "સાઇન ઇન",
+    "register": "ખાતું બનાવો",
+    "googleLogin": "Google સાથે ચાલુ રાખો",
+    "email": "ઇમેઇલ સરનામું",
+    "password": "પાસવર્ડ",
+    "name": "પૂરું નામ",
+    "noAccount": "ખાતું નથી?",
+    "hasAccount": "પહેલેથી ખાતું છે?",
+    "selectRole": "તમારી ભૂમિકા પસંદ કરો",
+    "roleDescription": "ખાદ્ય પુરવઠા શૃંખલામાં તમારો ભાગ પસંદ કરો"
+  },
+  "roles": {
+    "farmer": "ખેડૂત",
+    "farmerDesc": "કૃષિ પેદાશો ઉગાડો અને સપ્લાય કરો",
+    "mandi": "કમિશન એજન્ટ (મંડી)",
+    "mandiDesc": "ખેડૂતોને જથ્થાબંધ વેપારીઓ સાથે જોડો",
+    "wholesaler": "જથ્થાબંધ વેપારી",
+    "wholesalerDesc": "છૂટક વેપારીઓને માલ વિતરિત કરો",
+    "retailer": "છૂટક વેપારી",
+    "retailerDesc": "સીધા ગ્રાહકોને વેચો",
+    "admin": "એડમિનિસ્ટ્રેટર"
+  },
+  "dashboard": {
+    "welcome": "પાછા સ્વાગત છે",
+    "overview": "વિહંગાવલોકન",
+    "totalRevenue": "કુલ આવક",
+    "totalOrders": "કુલ ઓર્ડર્સ",
+    "activeItems": "સક્રિય આઇટમ્સ",
+    "wasteReduction": "બગાડ ઘટાડો",
+    "demandForecast": "માંગ આગાહી",
+    "priceTrends": "ભાવ વલણો",
+    "recentActivity": "તાજેતરની પ્રવૃત્તિ",
+    "aiInsights": "AI આંતરદ્રષ્ટિ",
+    "tips": "ભલામણો"
+  },
+  "farmer": {
+    "myCrops": "મારા પાક",
+    "addCrop": "પાક ઉમેરો",
+    "cropName": "પાકનું નામ",
+    "quantity": "જથ્થો (કિલો)",
+    "quality": "ગુણવત્તા ગ્રેડ",
+    "harvestDate": "અપેક્ષિત લણણી તારીખ",
+    "location": "ખેતરનું સ્થાન",
+    "state": "રાજ્ય",
+    "district": "જિલ્લો",
+    "landArea": "જમીન વિસ્તાર (એકર)",
+    "storage": "સંગ્રહ પ્રકાર",
+    "openField": "ખુલ્લું ખેતર",
+    "coldStorage": "કોલ્ડ સ્ટોરેજ",
+    "warehouse": "ગોડાઉન",
+    "marketPrices": "હાલના બજાર ભાવ",
+    "bestTimeToSell": "વેચવા માટે શ્રેષ્ઠ સમય",
+    "nearestMandi": "નજીકની મંડી"
+  },
+  "mandi": {
+    "currentStock": "હાલનો સ્ટોક",
+    "addStock": "સ્ટોક ઉમેરો",
+    "commodity": "ચીજવસ્તુ",
+    "buyPrice": "ખરીદ કિંમત (₹/કિલો)",
+    "sellPrice": "વેચાણ કિંમત (₹/કિલો)",
+    "connectedWholesalers": "જોડાયેલા જથ્થાબંધ વેપારીઓ",
+    "distributionRoutes": "વિતરણ માર્ગો",
+    "demandForProducts": "ઉત્પાદનો માટેની માંગ"
+  },
+  "wholesaler": {
+    "inventory": "ઇન્વેન્ટરી",
+    "addInventory": "ઇન્વેન્ટરી ઉમેરો",
+    "storageCapacity": "સંગ્રહ ક્ષમતા",
+    "coldChain": "કોલ્ડ ચેઈન સ્થિતિ",
+    "demandRequirements": "માંગ જરૂરીયાતો",
+    "distributionNetwork": "વિતરણ નેટવર્ક",
+    "active": "સક્રિય",
+    "inactive": "નિષ્ક્રિય"
+  },
+  "common": {
+    "save": "સાચવો",
+    "cancel": "રદ કરો",
+    "delete": "કાઢી નાખો",
+    "edit": "સુધારો",
+    "search": "શોધો",
+    "filter": "ફિલ્ટર",
+    "loading": "લોડ થઈ રહ્યું છે...",
+    "noData": "કોઈ ડેટા ઉપલબ્ધ નથી",
+    "success": "સફળતા",
+    "error": "ભૂલ",
+    "confirm": "પુષ્ટિ કરો",
+    "status": "સ્થિતિ",
+    "date": "તારીખ",
+    "price": "કિંમત",
+    "available": "ઉપલબ્ધ",
+    "sold": "વેચાઈ ગયું",
+    "expired": "મુદત પૂરી થઈ ગઈ",
+    "pending": "બાકી છે",
+    "confirmed": "પુષ્ટિ થઈ",
+    "inTransit": "રસ્તામાં છે",
+    "delivered": "ડિલિવર થયું"
+  }
+}

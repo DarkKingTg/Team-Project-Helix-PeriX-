@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "स्मार्ट खाद्य आपूर्ति श्रृंखला"
+  },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "marketplace": "बाज़ार",
+    "inventory": "सूची",
+    "orders": "आदेश",
+    "analytics": "विश्लेषण",
+    "settings": "सेटिंग्स",
+    "logout": "लॉग आउट"
+  },
+  "auth": {
+    "login": "साइन इन",
+    "register": "खाता बनाएं",
+    "googleLogin": "Google से जारी रखें",
+    "email": "ईमेल पता",
+    "password": "पासवर्ड",
+    "name": "पूरा नाम",
+    "noAccount": "खाता नहीं है?",
+    "hasAccount": "पहले से खाता है?",
+    "selectRole": "अपनी भूमिका चुनें",
+    "roleDescription": "खाद्य आपूर्ति श्रृंखला में अपनी भागीदारी चुनें"
+  },
+  "roles": {
+    "farmer": "किसान",
+    "farmerDesc": "कृषि उपज उगाएं और आपूर्ति करें",
+    "mandi": "कमीशन एजेंट (मंडी)",
+    "mandiDesc": "किसानों को थोक विक्रेताओं से जोड़ें",
+    "wholesaler": "थोक विक्रेता",
+    "wholesalerDesc": "खुदरा विक्रेताओं को माल वितरित करें",
+    "retailer": "खुदरा विक्रेता",
+    "retailerDesc": "सीधे उपभोक्ताओं को बेचें",
+    "admin": "प्रशासक"
+  },
+  "dashboard": {
+    "welcome": "वापस स्वागत है",
+    "overview": "अवलोकन",
+    "totalRevenue": "कुल राजस्व",
+    "totalOrders": "कुल आदेश",
+    "activeItems": "सक्रिय वस्तुएं",
+    "wasteReduction": "अपशिष्ट कमी",
+    "demandForecast": "मांग पूर्वानुमान",
+    "priceTrends": "मूल्य रुझान",
+    "recentActivity": "हाल की गतिविधि",
+    "aiInsights": "AI अंतर्दृष्टि",
+    "tips": "सिफारिशें"
+  },
+  "farmer": {
+    "myCrops": "मेरी फसलें",
+    "addCrop": "फसल जोड़ें",
+    "cropName": "फसल का नाम",
+    "quantity": "मात्रा (किलो)",
+    "quality": "गुणवत्ता श्रेणी",
+    "harvestDate": "अपेक्षित कटाई तिथि",
+    "location": "खेत का स्थान",
+    "state": "राज्य",
+    "district": "जिला",
+    "landArea": "भूमि क्षेत्र (एकड़)",
+    "storage": "भंडारण प्रकार",
+    "openField": "खुला मैदान",
+    "coldStorage": "शीत भंडारण",
+    "warehouse": "गोदाम",
+    "marketPrices": "वर्तमान बाज़ार भाव",
+    "bestTimeToSell": "बेचने का सबसे अच्छा समय",
+    "nearestMandi": "निकटतम मंडी"
+  },
+  "mandi": {
+    "currentStock": "वर्तमान स्टॉक",
+    "addStock": "स्टॉक जोड़ें",
+    "commodity": "कमोडिटी",
+    "buyPrice": "खरीद मूल्य (₹/किलो)",
+    "sellPrice": "बिक्री मूल्य (₹/किलो)",
+    "connectedWholesalers": "जुड़े थोक विक्रेता",
+    "distributionRoutes": "वितरण मार्ग",
+    "demandForProducts": "उत्पादों की मांग"
+  },
+  "wholesaler": {
+    "inventory": "सूची",
+    "addInventory": "सूची जोड़ें",
+    "storageCapacity": "भंडारण क्षमता",
+    "coldChain": "शीत श्रृंखला स्थिति",
+    "demandRequirements": "मांग आवश्यकताएं",
+    "distributionNetwork": "वितरण नेटवर्क",
+    "active": "सक्रिय",
+    "inactive": "निष्क्रिय"
+  },
+  "common": {
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "loading": "लोड हो रहा है...",
+    "noData": "कोई डेटा उपलब्ध नहीं",
+    "success": "सफलता",
+    "error": "त्रुटि",
+    "confirm": "पुष्टि करें",
+    "status": "स्थिति",
+    "date": "तिथि",
+    "price": "मूल्य",
+    "available": "उपलब्ध",
+    "sold": "बेचा गया",
+    "expired": "समाप्त",
+    "pending": "लंबित",
+    "confirmed": "पुष्टि की गई",
+    "inTransit": "रास्ते में",
+    "delivered": "वितरित"
+  }
+}

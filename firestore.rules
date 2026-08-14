@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 1. Users Collection
+    // Stores Farmer, Mandi, Wholesaler, Retailer, and Admin profiles
+    match /users/{userId} {
+      allow read: if true; // Public read for role checking & directory
+      allow write: if isOwner(userId) || !isAuthenticated(); // Allow setup/updates
+    }
+
+    // 2. Farmer Crops & Harvest Registry
+    match /crops/{cropId} {
+      allow read: if true;
+      allow create, update, delete: if true; // Open during development & hackathon demo
+    }
+
+    // 3. Mandi & Wholesaler Inventory Batches
+    match /inventory/{batchId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // 4. Anonymized B2B Surplus Marketplace
+    match /surplus_listings/{listingId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // 5. Supply Chain Orders & Escrow Transactions
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // 6. Live & Historical Mandi Market Price Cache
+    match /mandi_prices/{priceId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 7. 10-Layer AI Pipeline Logs & Telemetry
+    match /pipeline_logs/{logId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

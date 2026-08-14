@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "शेतापासून ताटापर्यंत"
+  },
+  "nav": {
+    "dashboard": "डॅशबोर्ड",
+    "marketplace": "बाजारपेठ",
+    "inventory": "इन्व्हेंटरी",
+    "orders": "ऑर्डर्स",
+    "analytics": "विश्लेषण",
+    "settings": "सेटिंग्ज",
+    "logout": "लॉग आउट"
+  },
+  "auth": {
+    "login": "साइन इन",
+    "register": "खाते तयार करा",
+    "googleLogin": "Google सह सुरू ठेवा",
+    "email": "ईमेल पत्ता",
+    "password": "पासवर्ड",
+    "name": "पूर्ण नाव",
+    "noAccount": "खाते नाही का?",
+    "hasAccount": "आधीच खाते आहे का?",
+    "selectRole": "आपली भूमिका निवडा",
+    "roleDescription": "अन्न पुरवठा साखळीत तुमचा सहभाग निवडा"
+  },
+  "roles": {
+    "farmer": "शेतकरी",
+    "farmerDesc": "कृषी मालाचे उत्पादन आणि पुरवठा करा",
+    "mandi": "कमिशन एजंट (मंडी)",
+    "mandiDesc": "शेतकऱ्यांना घाऊक व्यापार्‍यांशी जोडा",
+    "wholesaler": "घाऊक व्यापारी",
+    "wholesalerDesc": "किरकोळ विक्रेत्यांना माल वितरित करा",
+    "retailer": "किरकोळ विक्रेता",
+    "retailerDesc": "थेट ग्राहकांना विक्री करा",
+    "admin": "प्रशासक"
+  },
+  "dashboard": {
+    "welcome": "पुन्हा स्वागत आहे",
+    "overview": "आढावा",
+    "totalRevenue": "एकूण महसूल",
+    "totalOrders": "एकूण ऑर्डर्स",
+    "activeItems": "सक्रिय वस्तू",
+    "wasteReduction": "नासाडी घट",
+    "demandForecast": "मागणी अंदाज",
+    "priceTrends": "दर कल",
+    "recentActivity": "अलीकडील हालचाली",
+    "aiInsights": "AI विश्लेषण",
+    "tips": "शिफारसी"
+  },
+  "farmer": {
+    "myCrops": "माझी पिके",
+    "addCrop": "पीक जोडा",
+    "cropName": "पिकाचे नाव",
+    "quantity": "प्रमाण (किलो)",
+    "quality": "गुणवत्ता श्रेणी",
+    "harvestDate": "अपेक्षित काढणी तारीख",
+    "location": "शेताचे स्थान",
+    "state": "राज्य",
+    "district": "जिल्हा",
+    "landArea": "जमीन क्षेत्र (एकर)",
+    "storage": "साठवण प्रकार",
+    "openField": "मोकळे शेत",
+    "coldStorage": "शीतगृह (कोल्ड स्टोरेज)",
+    "warehouse": "गोदाम",
+    "marketPrices": "सध्याचे बाजार भाव",
+    "bestTimeToSell": "विक्रीसाठी सर्वोत्तम वेळ",
+    "nearestMandi": "जवळची मंडी"
+  },
+  "mandi": {
+    "currentStock": "सध्याचा साठा",
+    "addStock": "साठा जोडा",
+    "commodity": "माल",
+    "buyPrice": "खरेदी दर (₹/किलो)",
+    "sellPrice": "विक्री दर (₹/किलो)",
+    "connectedWholesalers": "जोडलेले घाऊक व्यापारी",
+    "distributionRoutes": "वितरण मार्ग",
+    "demandForProducts": "उत्पादनांची मागणी"
+  },
+  "wholesaler": {
+    "inventory": "इन्व्हेंटरी",
+    "addInventory": "इन्व्हेंटरी जोडा",
+    "storageCapacity": "साठवण क्षमता",
+    "coldChain": "कोल्ड चेन स्थिती",
+    "demandRequirements": "मागणी आवश्यकता",
+    "distributionNetwork": "वितरण नेटवर्क",
+    "active": "सक्रिय",
+    "inactive": "निष्क्रिय"
+  },
+  "common": {
+    "save": "जतन करा",
+    "cancel": "रद्द करा",
+    "delete": "हटवा",
+    "edit": "संपादित करा",
+    "search": "शोधा",
+    "filter": "फिल्टर",
+    "loading": "लोड होत आहे...",
+    "noData": "माहिती उपलब्ध नाही",
+    "success": "यशस्वी",
+    "error": "त्रुटी",
+    "confirm": "पुष्टी करा",
+    "status": "स्थिती",
+    "date": "तारीख",
+    "price": "किंमत",
+    "available": "उपलब्ध",
+    "sold": "विकले गेले",
+    "expired": "मुदत संपली",
+    "pending": "प्रलंबित",
+    "confirmed": "पुष्टी केली",
+    "inTransit": "मार्गावर",
+    "delivered": "पोहोचवले"
+  }
+}

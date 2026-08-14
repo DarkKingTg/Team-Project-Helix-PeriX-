@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "PeriX",
+    "tagline": "ಹೊಲದಿಂದ ತಟ್ಟೆಯವರೆಗೆ"
+  },
+  "nav": {
+    "dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "marketplace": "ಮಾರುಕಟ್ಟೆ",
+    "inventory": "ದಾಸ್ತಾನು",
+    "orders": "ಆದೇಶಗಳು",
+    "analytics": "ವಿಶ್ಲೇಷಣೆ",
+    "settings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+    "logout": "ಲಾಗ್ ಔಟ್"
+  },
+  "auth": {
+    "login": "ಸೈನ್ ಇನ್",
+    "register": "ಖಾತೆ ರಚಿಸಿ",
+    "googleLogin": "Google ನೊಂದಿಗೆ ಮುಂದುವರಿಯಿರಿ",
+    "email": "ಇಮೇಲ್ ವಿಳಾಸ",
+    "password": "ಪಾಸ್‌ವರ್ಡ್",
+    "name": "ಪೂರ್ಣ ಹೆಸರು",
+    "noAccount": "ಖಾತೆ ಇಲ್ಲವೇ?",
+    "hasAccount": "ಈಗಾಗಲೇ ಖಾತೆ ಹೊಂದಿದ್ದೀರಾ?",
+    "selectRole": "ನಿಮ್ಮ ಪಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "roleDescription": "ಆಹಾರ ಪೂರೈಕೆ ಸರಪಳಿಯಲ್ಲಿ ನಿಮ್ಮ ಪಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+  },
+  "roles": {
+    "farmer": "ರೈತ",
+    "farmerDesc": "ಕೃಷಿ ಉತ್ಪನ್ನಗಳನ್ನು ಬೆಳೆಸಿ ಮತ್ತು ಪೂರೈಸಿ",
+    "mandi": "ಕಮಿಷನ್ ಏಜೆಂಟ್ (ಮಂಡಿ)",
+    "mandiDesc": "ರೈತರನ್ನು ಸಗಟು ವ್ಯಾಪಾರಿಗಳೊಂದಿಗೆ ಸಂಪರ್ಕಿಸಿ",
+    "wholesaler": "ಸಗಟು ವ್ಯಾಪಾರಿ",
+    "wholesalerDesc": "ಚಿಲ್ಲರೆ ವ್ಯಾಪಾರಿಗಳಿಗೆ ಸರಕುಗಳನ್ನು ವಿತರಿಸಿ",
+    "retailer": "ಚಿಲ್ಲರೆ ವ್ಯಾಪಾರಿ",
+    "retailerDesc": "ಗ್ರಾಹಕರಿಗೆ ನೇರವಾಗಿ ಮಾರಾಟ ಮಾಡಿ",
+    "admin": "ನಿರ್ವಾಹಕ"
+  },
+  "dashboard": {
+    "welcome": "ಮರಳಿ ಸುಸ್ವಾಗತ",
+    "overview": "ಅವಲೋಕನ",
+    "totalRevenue": "ಒಟ್ಟು ಆದಾಯ",
+    "totalOrders": "ಒಟ್ಟು ಆದೇಶಗಳು",
+    "activeItems": "ಸಕ್ರಿಯ ವಸ್ತುಗಳು",
+    "wasteReduction": "ತ್ಯಾಜ್ಯ ಕಡಿತ",
+    "demandForecast": "ಬೇಡಿಕೆ ಮುನ್ಸೂಚನೆ",
+    "priceTrends": "ಬೆಲೆ ಪ್ರವೃತ್ತಿಗಳು",
+    "recentActivity": "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ",
+    "aiInsights": "AI ಒಳನೋಟಗಳು",
+    "tips": "ಶಿಫಾರಸುಗಳು"
+  },
+  "farmer": {
+    "myCrops": "ನನ್ನ ಬೆಳೆಗಳು",
+    "addCrop": "ಬೆಳೆ ಸೇರಿಸಿ",
+    "cropName": "ಬೆಳೆಯ ಹೆಸರು",
+    "quantity": "ಪ್ರಮಾಣ (ಕೆಜಿ)",
+    "quality": "ಗುಣಮಟ್ಟ ಶ್ರೇಣಿ",
+    "harvestDate": "ನಿರೀಕ್ಷಿತ ಕೊಯ್ಲು ದಿನಾಂಕ" ,
+    "location": "ಕೃಷಿ ಸ್ಥಳ",
+    "state": "ರಾಜ್ಯ",
+    "district": "ಜಿಲ್ಲೆ",
+    "landArea": "ಭೂ ವಿಸ್ತೀರ್ಣ (ಎಕರೆ)",
+    "storage": "ಸಂಗ್ರಹಣೆ ಪ್ರಕಾರ",
+    "openField": "ತೆರೆದ ಮೈದಾನ",
+    "coldStorage": "ಶೀತಲ ಸಂಗ್ರಹಣೆ",
+    "warehouse": "ಗೋದಾಮು",
+    "marketPrices": "ಪ್ರಸ್ತುತ ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು",
+    "bestTimeToSell": "ಮಾರಾಟ ಮಾಡಲು ಉತ್ತಮ ಸಮಯ",
+    "nearestMandi": "ಹತ್ತಿರದ ಮಂಡಿ"
+  },
+  "mandi": {
+    "currentStock": "ಪ್ರಸ್ತುತ ದಾಸ್ತಾನು",
+    "addStock": "ದಾಸ್ತಾನು ಸೇರಿಸಿ",
+    "commodity": "ಸರಕು",
+    "buyPrice": "ಖರೀದಿ ಬೆಲೆ (₹/ಕೆಜಿ)",
+    "sellPrice": "ಮಾರಾಟ ಬೆಲೆ (₹/ಕೆಜಿ)",
+    "connectedWholesalers": "ಸಂಪರ್ಕಿತ ಸಗಟು ವ್ಯಾಪಾರಿಗಳು",
+    "distributionRoutes": "ವಿತರಣಾ ಮಾರ್ಗಗಳು",
+    "demandForProducts": "ಉತ್ಪನ್ನಗಳಿಗೆ ಬೇಡಿಕೆ"
+  },
+  "wholesaler": {
+    "inventory": "ದಾಸ್ತಾನು",
+    "addInventory": "ದಾಸ್ತಾನು ಸೇರಿಸಿ",
+    "storageCapacity": "ಸಂಗ್ರಹಣಾ ಸಾಮರ್ಥ್ಯ",
+    "coldChain": "ಶೀತಲ ಸರಪಳಿ ಸ್ಥಿತಿ",
+    "demandRequirements": "ಬೇಡಿಕೆಯ ಅಗತ್ಯತೆಗಳು",
+    "distributionNetwork": "ವಿತರಣಾ ಜಾಲ",
+    "active": "ಸಕ್ರಿಯ",
+    "inactive": "ನಿಷ್ಕ್ರಿಯ"
+  },
+  "common": {
+    "save": "ಉಳಿಸಿ",
+    "cancel": "ರದ್ದುಮಾಡಿ",
+    "delete": "ಅಳಿಸಿ",
+    "edit": "ತಿದ್ದುಪಡಿ",
+    "search": "ಹುಡುಕಿ",
+    "filter": "ಫಿಲ್ಟರ್",
+    "loading": "ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
+    "noData": "ಯಾವುದೇ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ",
+    "success": "ಯಶಸ್ಸು",
+    "error": "ದೋಷ",
+    "confirm": "ದೃಢೀಕರಿಸಿ",
+    "status": "ಸ್ಥಿತಿ",
+    "date": "ದಿನಾಂಕ",
+    "price": "ಬೆಲೆ",
+    "available": "ಲಭ್ಯವಿದೆ",
+    "sold": "ಮಾರಾಟವಾಗಿದೆ",
+    "expired": "ಅವಧಿ ಮುಗಿದಿದೆ",
+    "pending": "ಬಾಕಿ ಉಳಿದಿದೆ",
+    "confirmed": "ದೃಢೀಕರಿಸಲಾಗಿದೆ",
+    "inTransit": "ಸಾಗಣೆಯಲ್ಲಿದೆ",
+    "delivered": "ತಲುಪಿಸಲಾಗಿದೆ"
+  }
+}

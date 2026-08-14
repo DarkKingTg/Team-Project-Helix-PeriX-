@@ -313,7 +313,7 @@ export default function LoginPage() {
 
           {/* Supply Chain Mesh Badges */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", marginBottom: "36px" }}>
-            {["🌾 Farmer", "🏪 Mandi Agent", "🚚 Wholesaler", "🛒 Retailer", "🤖 Prophet & XGBoost AI"].map((item) => (
+            {["Farmer", "Mandi Agent", "Wholesaler", "Retailer", "Prophet & XGBoost AI"].map((item) => (
               <span
                 key={item}
                 style={{

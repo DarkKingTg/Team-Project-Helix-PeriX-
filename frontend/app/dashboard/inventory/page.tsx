@@ -76,78 +76,6 @@ export default function InventoryPage() {
   const collectionName = isWholesaler ? "wholesaler_inventory" : "mandi_inventory";
 
   useEffect(() => {
-    // Initial mock items for immediate demonstration if empty
-    const defaultItems: InventoryItem[] = isWholesaler
-      ? [
-          {
-            id: "wh-1",
-            commodity: "Potato",
-            quantity: 3500,
-            qualityGrade: "A - Grade",
-            buyPrice: 20,
-            sellPrice: 25,
-            coldChain: true,
-            expiryDays: 20,
-            destinationNode: "Chennai Metro Hypermarket",
-          },
-          {
-            id: "wh-2",
-            commodity: "Tomato",
-            quantity: 1800,
-            qualityGrade: "B - Grade",
-            buyPrice: 30,
-            sellPrice: 36,
-            coldChain: true,
-            expiryDays: 4,
-            destinationNode: "Kongu Retailers Network",
-          },
-          {
-            id: "wh-3",
-            commodity: "Onion",
-            quantity: 4200,
-            qualityGrade: "A - Grade",
-            buyPrice: 26,
-            sellPrice: 31,
-            coldChain: false,
-            expiryDays: 30,
-            destinationNode: "Madurai Wholesale Hub",
-          },
-        ]
-      : [
-          {
-            id: "mandi-1",
-            commodity: "Tomato",
-            quantity: 2400,
-            qualityGrade: "A - Premium",
-            buyPrice: 28,
-            sellPrice: 33,
-            sourceFarmer: "Coimbatore Farmer Group",
-            expiryDays: 5,
-          },
-          {
-            id: "mandi-2",
-            commodity: "Chilli",
-            quantity: 650,
-            qualityGrade: "A - Premium",
-            buyPrice: 110,
-            sellPrice: 125,
-            sourceFarmer: "Salem Spices Cluster",
-            expiryDays: 14,
-          },
-          {
-            id: "mandi-3",
-            commodity: "Banana",
-            quantity: 1200,
-            qualityGrade: "B - Standard",
-            buyPrice: 38,
-            sellPrice: 44,
-            sourceFarmer: "Erode Banana FPO",
-            expiryDays: 6,
-          },
-        ];
-
-    setItems(defaultItems);
-
     if (user?.uid) {
       try {
         const q = query(collection(db, collectionName), where("userId", "==", user.uid));
@@ -158,6 +86,8 @@ export default function InventoryPage() {
               ...d.data(),
             })) as InventoryItem[];
             setItems(dbItems);
+          } else {
+            setItems([]);
           }
         });
         return () => unsubscribe();
@@ -178,6 +108,7 @@ export default function InventoryPage() {
       qualityGrade: form.qualityGrade,
       buyPrice: Number(form.buyPrice),
       sellPrice: Number(form.sellPrice),
+      storageType: form.storageType,
       coldChain: form.coldChain,
       expiryDays: Number(form.expiryDays),
       sourceFarmer: form.sourceFarmer,
@@ -185,7 +116,7 @@ export default function InventoryPage() {
     };
 
     if (editingId) {
-      setItems((prev) => prev.map((i) => (i.id === editingId ? newItem : i)));
+      setItems((prev) => prev.map((item) => (item.id === editingId ? newItem : item)));
     } else {
       setItems((prev) => [newItem, ...prev]);
     }
@@ -193,12 +124,19 @@ export default function InventoryPage() {
     if (user?.uid) {
       try {
         if (editingId) {
-          await updateDoc(doc(db, collectionName, editingId), { ...newItem, updatedAt: serverTimestamp() });
+          await updateDoc(doc(db, collectionName, editingId), {
+            ...newItem,
+            updatedAt: serverTimestamp(),
+          });
         } else {
-          await addDoc(collection(db, collectionName), { ...newItem, userId: user.uid, updatedAt: serverTimestamp() });
+          await addDoc(collection(db, collectionName), {
+            ...newItem,
+            userId: user.uid,
+            createdAt: serverTimestamp(),
+          });
         }
-      } catch (err) {
-        console.warn("Firestore sync fallback to local state:", err);
+      } catch (e) {
+        console.warn("Firestore save error, using local state:", e);
       }
     }
 
@@ -207,133 +145,107 @@ export default function InventoryPage() {
     setEditingId(null);
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to remove this stock entry?")) return;
-    setItems((prev) => prev.filter((i) => i.id !== id));
+  const handleDelete = async (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
     if (user?.uid) {
       try {
-        deleteDoc(doc(db, collectionName, id));
+        await deleteDoc(doc(db, collectionName, id));
       } catch (e) {
-        console.warn("Delete error:", e);
+        console.warn("Firestore delete error:", e);
       }
     }
   };
 
-  const totalQuantity = items.reduce((acc, i) => acc + (i.quantity || 0), 0);
-  const totalValue = items.reduce((acc, i) => acc + (i.quantity || 0) * (i.sellPrice || 0), 0);
-
   return (
-    <div className="page-container">
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+    <div className="animate-fade-in" style={{ padding: "8px 0" }}>
+      {/* Page Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-            {isWholesaler ? "Wholesale Hub Inventory" : "Mandi Aggregator Inventory"}
-          </h2>
+          <h1 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
+            {isWholesaler ? "Wholesale Hub & Reefer Logistics" : "Mandi Aggregation & Shelf-Life Tracker"}
+          </h1>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Real-time batch tracking, shelf-life monitoring & automated margin calculation
+            {isWholesaler
+              ? "Cold-chain telemetry, multi-drop load dispatching, and margin optimization."
+              : "Batch intake logger, Arrhenius respiration decay curves, and APMC commission spreads."}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditingId(null); }}>
+
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            setEditingId(null);
+            setShowForm(!showForm);
+          }}
+        >
           {showForm ? <X size={18} /> : <Plus size={18} />}
-          {showForm ? "Cancel" : "Add Inventory Batch"}
+          {showForm ? "Close Form" : isWholesaler ? "Log Reefer Consignment" : "Log Mandi Batch"}
         </button>
       </div>
 
-      {/* Summary KPI Pills */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(46,125,50,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Scale size={20} color="var(--primary)" />
-            </div>
-            <div>
-              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Total Live Stock</p>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>{totalQuantity.toLocaleString()} kg</h3>
-            </div>
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(255,152,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IndianRupee size={20} color="#FF9800" />
-            </div>
-            <div>
-              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Estimated Asset Value</p>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>₹{totalValue.toLocaleString()}</h3>
-            </div>
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: "18px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(33,150,243,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <ThermometerSnowflake size={20} color="#2196F3" />
-            </div>
-            <div>
-              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Cold-Chain Integrity</p>
-              <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#2196F3" }}>99.2% Active</h3>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Add / Edit Inventory Form */}
+      {/* Add / Edit Form Modal */}
       {showForm && (
-        <div className="card animate-scale-in" style={{ padding: "24px", marginBottom: "24px" }}>
-          <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "20px", color: "var(--text-primary)" }}>
-            {editingId ? "Update Inventory Batch" : "Add New Stock Intake"}
-          </h3>
+        <div
+          className="card animate-fade-in"
+          style={{
+            padding: "24px",
+            marginBottom: "24px",
+            border: "1px solid var(--primary)",
+            background: "var(--surface)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)" }}>
+              {editingId ? "Edit Consignment Entry" : isWholesaler ? "Register New Reefer Dispatch" : "Record Inward Mandi Batch"}
+            </h3>
+            <button className="btn btn-ghost btn-icon" onClick={() => setShowForm(false)}>
+              <X size={18} />
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Commodity
-                </label>
+                <label className="label">Commodity</label>
                 <select
                   className="input"
                   value={form.commodity}
                   onChange={(e) => setForm({ ...form, commodity: e.target.value })}
                   required
                 >
-                  {SAMPLE_COMMODITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {SAMPLE_COMMODITIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Intake Quantity (kg)
-                </label>
+                <label className="label">Quantity (kg)</label>
                 <input
                   type="number"
                   className="input"
                   value={form.quantity}
                   onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
                   required
-                  min={1}
+                  min="1"
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Quality Grade
-                </label>
+                <label className="label">Quality Grade</label>
                 <select
                   className="input"
                   value={form.qualityGrade}
                   onChange={(e) => setForm({ ...form, qualityGrade: e.target.value })}
                 >
-                  <option value="A - Premium">A - Premium Grade (Zero defect)</option>
-                  <option value="B - Standard">B - Standard Commercial Grade</option>
-                  <option value="C - Processing">C - Processing / Immediate Consume</option>
+                  <option value="A - Premium">A - Premium (Export / Supermarket)</option>
+                  <option value="B - Standard">B - Standard (Wholesale / Mandi)</option>
+                  <option value="C - Economy">C - Economy (Processing / Kitchens)</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Procurement / Buy Price (₹/kg)
-                </label>
+                <label className="label">Procurement Rate (Rs/kg)</label>
                 <input
                   type="number"
                   className="input"
@@ -344,9 +256,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Selling Target (₹/kg)
-                </label>
+                <label className="label">Target Selling Rate (Rs/kg)</label>
                 <input
                   type="number"
                   className="input"
@@ -357,23 +267,19 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Estimated Shelf Life (Days)
-                </label>
+                <label className="label">Estimated Shelf Life (Days)</label>
                 <input
                   type="number"
                   className="input"
                   value={form.expiryDays}
                   onChange={(e) => setForm({ ...form, expiryDays: Number(e.target.value) })}
                   required
-                  min={1}
+                  min="1"
                 />
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  {isWholesaler ? "Connected Retail Outlets" : "Origin Farmer / Cluster"}
-                </label>
+                <label className="label">{isWholesaler ? "Destination Retail Hub" : "Source Farmer / FPO"}</label>
                 <input
                   type="text"
                   className="input"
@@ -401,103 +307,121 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Inventory Table */}
-      <div className="card" style={{ padding: "20px", overflowX: "auto" }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Commodity</th>
-              <th>Quantity (kg)</th>
-              <th>Quality</th>
-              <th>Buy / Sell Rate</th>
-              <th>Margin</th>
-              <th>Shelf Life</th>
-              <th>{isWholesaler ? "Retail Destination" : "Origin Source"}</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => {
-              const buy = item.buyPrice || 0;
-              const sell = item.sellPrice || 0;
-              const margin = sell > 0 ? (((sell - buy) / buy) * 100).toFixed(1) : "0";
-              const isNearExpiry = (item.expiryDays || 10) <= 4;
+      {/* Empty State */}
+      {items.length === 0 && !showForm && (
+        <div className="card" style={{ padding: "48px 24px", textAlign: "center", border: "1px dashed var(--border)", marginBottom: "24px" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Package size={28} color="var(--primary)" />
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>No Inventory Records Found</h3>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 20px" }}>
+            Your inventory mesh is ready. Click below to log your first consignment and start tracking cold-chain shelf life and margins.
+          </p>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            <Plus size={16} /> {isWholesaler ? "Log First Reefer Consignment" : "Log First Mandi Batch"}
+          </button>
+        </div>
+      )}
 
-              return (
-                <tr key={item.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(46,125,50,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Package size={16} color="var(--primary)" />
+      {/* Inventory Table */}
+      {items.length > 0 && (
+        <div className="card" style={{ padding: "20px", overflowX: "auto" }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Commodity</th>
+                <th>Quantity (kg)</th>
+                <th>Quality</th>
+                <th>Buy / Sell Rate</th>
+                <th>Margin</th>
+                <th>Shelf Life</th>
+                <th>{isWholesaler ? "Retail Destination" : "Origin Source"}</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const buy = item.buyPrice || 0;
+                const sell = item.sellPrice || 0;
+                const margin = sell > 0 ? (((sell - buy) / buy) * 100).toFixed(1) : "0";
+                const isNearExpiry = (item.expiryDays || 10) <= 4;
+
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(46,125,50,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Package size={16} color="var(--primary)" />
+                        </div>
+                        <div>
+                          <span style={{ fontWeight: "600" }}>{item.commodity}</span>
+                          {item.coldChain && (
+                            <span style={{ display: "block", fontSize: "11px", color: "#2196F3" }}>Cold Chain Active</span>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <span style={{ fontWeight: "600" }}>{item.commodity}</span>
-                        {item.coldChain && (
-                          <span style={{ display: "block", fontSize: "11px", color: "#2196F3" }}>❄️ Cold Chain</span>
-                        )}
+                    </td>
+                    <td style={{ fontWeight: "600" }}>{item.quantity.toLocaleString()} kg</td>
+                    <td>
+                      <span className="badge badge-success">{item.qualityGrade}</span>
+                    </td>
+                    <td>
+                      <span>Rs {buy} / Rs {sell}</span>
+                    </td>
+                    <td>
+                      <span style={{ color: Number(margin) > 0 ? "var(--primary)" : "var(--error)", fontWeight: "600" }}>
+                        +{margin}%
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${isNearExpiry ? "badge-warning" : "badge-info"}`}>
+                        {item.expiryDays} days
+                      </span>
+                    </td>
+                    <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                      {isWholesaler ? item.destinationNode : item.sourceFarmer}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          className="btn btn-ghost btn-icon"
+                          title="Edit"
+                          onClick={() => {
+                            setForm({
+                              commodity: item.commodity,
+                              quantity: item.quantity,
+                              qualityGrade: item.qualityGrade,
+                              buyPrice: item.buyPrice || 25,
+                              sellPrice: item.sellPrice || 30,
+                              storageType: item.storageType || "cold_storage",
+                              coldChain: !!item.coldChain,
+                              expiryDays: item.expiryDays || 7,
+                              sourceFarmer: item.sourceFarmer || "",
+                              destinationNode: item.destinationNode || "",
+                            });
+                            setEditingId(item.id);
+                            setShowForm(true);
+                          }}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-icon"
+                          style={{ color: "var(--error)" }}
+                          title="Delete"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ fontWeight: "600" }}>{item.quantity.toLocaleString()} kg</td>
-                  <td>
-                    <span className="badge badge-success">{item.qualityGrade}</span>
-                  </td>
-                  <td>
-                    <span>₹{buy} / ₹{sell}</span>
-                  </td>
-                  <td>
-                    <span style={{ color: Number(margin) > 0 ? "var(--primary)" : "var(--error)", fontWeight: "600" }}>
-                      +{margin}%
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`badge ${isNearExpiry ? "badge-warning" : "badge-info"}`}>
-                      {item.expiryDays} days {isNearExpiry ? "⚠️" : ""}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                    {isWholesaler ? item.destinationNode : item.sourceFarmer}
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button
-                        className="btn btn-ghost btn-icon"
-                        title="Edit"
-                        onClick={() => {
-                          setForm({
-                            commodity: item.commodity,
-                            quantity: item.quantity,
-                            qualityGrade: item.qualityGrade,
-                            buyPrice: item.buyPrice || 25,
-                            sellPrice: item.sellPrice || 30,
-                            storageType: item.storageType || "cold_storage",
-                            coldChain: !!item.coldChain,
-                            expiryDays: item.expiryDays || 7,
-                            sourceFarmer: item.sourceFarmer || "",
-                            destinationNode: item.destinationNode || "",
-                          });
-                          setEditingId(item.id);
-                          setShowForm(true);
-                        }}
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-icon"
-                        style={{ color: "var(--error)" }}
-                        title="Delete"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

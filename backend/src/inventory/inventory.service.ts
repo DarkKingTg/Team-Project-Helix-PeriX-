@@ -6,56 +6,7 @@ export class InventoryService {
   private mandiStore: Map<string, Record<string, unknown>> = new Map();
   private wholesalerStore: Map<string, Record<string, unknown>> = new Map();
 
-  constructor(private firebaseService: FirebaseService) {
-    this.seedDemoData();
-  }
-
-  private seedDemoData() {
-    const demoMandi = [
-      {
-        id: 'mandi-item-1',
-        mandiUserId: 'demo-user-mandi',
-        commodity: 'Tomato',
-        variety: 'Hybrid',
-        quantityKg: 3500,
-        arrivalDate: '2026-08-14',
-        modalPricePerKg: 34.0,
-        storageType: 'ambient_shed',
-        spoilageRisk: 'medium',
-        hoursInStorage: 18,
-      },
-      {
-        id: 'mandi-item-2',
-        mandiUserId: 'demo-user-mandi',
-        commodity: 'Onion',
-        variety: 'Red Nasik',
-        quantityKg: 6200,
-        arrivalDate: '2026-08-13',
-        modalPricePerKg: 31.0,
-        storageType: 'ventilated_warehouse',
-        spoilageRisk: 'low',
-        hoursInStorage: 28,
-      },
-    ];
-
-    const demoWholesale = [
-      {
-        id: 'ws-item-1',
-        wholesalerId: 'demo-user-wholesaler',
-        commodity: 'Potato',
-        variety: 'Jyoti',
-        quantityKg: 8000,
-        storageType: 'cold_storage',
-        temperatureC: 4.2,
-        spoilageRisk: 'low',
-        hoursInStorage: 48,
-        destinationCity: 'Chennai',
-      },
-    ];
-
-    demoMandi.forEach((m) => this.mandiStore.set(m.id, m));
-    demoWholesale.forEach((w) => this.wholesalerStore.set(w.id, w));
-  }
+  constructor(private firebaseService: FirebaseService) {}
 
   // Mandi inventory
   async getMandiInventory(mandiUserId: string) {
@@ -71,7 +22,7 @@ export class InventoryService {
       console.warn('Firestore getMandiInventory fallback to memory:', e);
     }
     return Array.from(this.mandiStore.values()).filter(
-      (m) => m.mandiUserId === mandiUserId || mandiUserId.includes('mandi') || mandiUserId === 'user001',
+      (m) => m.mandiUserId === mandiUserId,
     );
   }
 
@@ -106,7 +57,7 @@ export class InventoryService {
       console.warn('Firestore getWholesalerInventory fallback to memory:', e);
     }
     return Array.from(this.wholesalerStore.values()).filter(
-      (w) => w.wholesalerId === wholesalerId || wholesalerId.includes('wholesaler') || wholesalerId === 'user001',
+      (w) => w.wholesalerId === wholesalerId,
     );
   }
 

@@ -48,44 +48,7 @@ interface Crop {
   createdAt?: unknown;
 }
 
-const DEFAULT_FARMER_CROPS: Crop[] = [
-  {
-    id: "crop-101",
-    name: "Tomato (Hybrid Vine)",
-    quantity: 2400,
-    qualityGrade: "A - Premium",
-    harvestDate: "2026-08-18",
-    state: "Tamil Nadu",
-    district: "Coimbatore",
-    landArea: 2.5,
-    storageType: "cold_storage",
-    status: "available",
-  },
-  {
-    id: "crop-102",
-    name: "Potato (Jyoti)",
-    quantity: 5000,
-    qualityGrade: "A - Premium",
-    harvestDate: "2026-08-25",
-    state: "Tamil Nadu",
-    district: "Coimbatore",
-    landArea: 4.0,
-    storageType: "warehouse",
-    status: "available",
-  },
-  {
-    id: "crop-103",
-    name: "Green Chilli",
-    quantity: 450,
-    qualityGrade: "A - Premium",
-    harvestDate: "2026-08-16",
-    state: "Tamil Nadu",
-    district: "Salem",
-    landArea: 1.0,
-    storageType: "open_field",
-    status: "available",
-  },
-];
+const DEFAULT_FARMER_CROPS: Crop[] = [];
 
 const cropOptions = [
   "Tomato", "Potato", "Onion", "Wheat", "Rice", "Sugarcane",
@@ -413,6 +376,21 @@ export default function CropsPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {crops.length === 0 && !showForm && (
+        <div className="card" style={{ padding: "48px 24px", textAlign: "center", border: "1px dashed var(--border)", marginBottom: "24px" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Sprout size={28} color="var(--primary)" />
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>No Crops Registered Yet</h3>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 20px" }}>
+            Your crop mesh is ready. Click the button below to register your standing crop batches and track harvest windows and mandi rates.
+          </p>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            <Plus size={16} /> Register First Crop
+          </button>
         </div>
       )}
 

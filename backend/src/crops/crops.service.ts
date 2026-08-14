@@ -5,40 +5,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 export class CropsService {
   private inMemoryCrops: Map<string, Record<string, unknown>> = new Map();
 
-  constructor(private firebaseService: FirebaseService) {
-    // Seed initial demo crops
-    this.seedDemoData();
-  }
-
-  private seedDemoData() {
-    const demo = [
-      {
-        id: 'crop-001',
-        farmerId: 'demo-user-farmer',
-        commodity: 'Tomato',
-        variety: 'Hybrid Vine',
-        quantity: 2400,
-        expectedHarvestDate: '2026-08-18',
-        acreage: 3.5,
-        status: 'available',
-        pricePerKg: 34.0,
-        location: 'Coimbatore, Tamil Nadu',
-      },
-      {
-        id: 'crop-002',
-        farmerId: 'demo-user-farmer',
-        commodity: 'Potato',
-        variety: 'Jyoti',
-        quantity: 4500,
-        expectedHarvestDate: '2026-08-25',
-        acreage: 5.0,
-        status: 'available',
-        pricePerKg: 24.0,
-        location: 'Coimbatore, Tamil Nadu',
-      },
-    ];
-    demo.forEach((c) => this.inMemoryCrops.set(c.id, c));
-  }
+  constructor(private firebaseService: FirebaseService) {}
 
   async findByFarmer(farmerId: string) {
     try {
@@ -53,7 +20,7 @@ export class CropsService {
       console.warn('Firestore crops.findByFarmer fallback to memory:', e);
     }
     return Array.from(this.inMemoryCrops.values()).filter(
-      (c) => c.farmerId === farmerId || farmerId.includes('farmer') || farmerId === 'user001',
+      (c) => c.farmerId === farmerId,
     );
   }
 

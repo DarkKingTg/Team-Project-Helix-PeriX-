@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
+import { apiClient } from "@/lib/api-client";
 import {
   collection,
   addDoc,
@@ -43,6 +44,7 @@ interface InventoryItem {
   sourceFarmer?: string;
   destinationNode?: string;
   updatedAt?: unknown;
+  [key: string]: unknown;
 }
 
 const SAMPLE_COMMODITIES = [
@@ -72,30 +74,83 @@ export default function InventoryPage() {
     destinationNode: "FreshMart Retail Chennai",
   });
 
-  // Local collection name based on role
   const collectionName = isWholesaler ? "wholesaler_inventory" : "mandi_inventory";
+  const storageKey = `perix_inventory_${user?.uid || "guest"}_${collectionName}`;
 
+  // 1. Initial Load from LocalStorage Cache for Instant Hydration
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+          }
+        }
+      } catch (err) {
+        console.warn("LocalStorage read error:", err);
+      }
+    }
+  }, [storageKey]);
+
+  // 2. Fetch from Backend API + Firestore Real-Time Sync
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchBackendInventory() {
+      if (isWholesaler) {
+        const backendItems = await apiClient.inventory.getWholesalerInventory();
+        if (isMounted && backendItems && Array.isArray(backendItems) && backendItems.length > 0) {
+          setItems(backendItems);
+          localStorage.setItem(storageKey, JSON.stringify(backendItems));
+        }
+      } else {
+        const backendItems = await apiClient.inventory.getMandiInventory();
+        if (isMounted && backendItems && Array.isArray(backendItems) && backendItems.length > 0) {
+          setItems(backendItems);
+          localStorage.setItem(storageKey, JSON.stringify(backendItems));
+        }
+      }
+    }
+
+    fetchBackendInventory();
+
+    // Firestore Listener
     if (user?.uid) {
       try {
         const q = query(collection(db, collectionName), where("userId", "==", user.uid));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          if (!snapshot.empty) {
-            const dbItems = snapshot.docs.map((d) => ({
-              id: d.id,
-              ...d.data(),
-            })) as InventoryItem[];
-            setItems(dbItems);
-          } else {
-            setItems([]);
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            if (!snapshot.empty) {
+              const dbItems = snapshot.docs.map((d) => ({
+                id: d.id,
+                ...d.data(),
+              })) as InventoryItem[];
+              if (isMounted) {
+                setItems(dbItems);
+                localStorage.setItem(storageKey, JSON.stringify(dbItems));
+              }
+            }
+          },
+          (err) => {
+            console.warn("Firestore subscription notice (using local/backend store):", err.message);
           }
-        });
-        return () => unsubscribe();
+        );
+        return () => {
+          isMounted = false;
+          unsubscribe();
+        };
       } catch (e) {
-        console.warn("Firestore onSnapshot error:", e);
+        console.warn("Firestore setup notice:", e);
       }
     }
-  }, [user, collectionName, isWholesaler]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid, collectionName, isWholesaler, storageKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,12 +170,37 @@ export default function InventoryPage() {
       destinationNode: form.destinationNode,
     };
 
+    let updatedList: InventoryItem[];
     if (editingId) {
-      setItems((prev) => prev.map((item) => (item.id === editingId ? newItem : item)));
+      updatedList = items.map((item) => (item.id === editingId ? newItem : item));
     } else {
-      setItems((prev) => [newItem, ...prev]);
+      updatedList = [newItem, ...items];
     }
 
+    // 1. Immediately update React State
+    setItems(updatedList);
+
+    // 2. Immediately save to LocalStorage (Guaranteed persistence on page refresh)
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updatedList));
+      } catch (err) {
+        console.warn("LocalStorage write error:", err);
+      }
+    }
+
+    // 3. Save to Backend Microservice
+    try {
+      if (isWholesaler) {
+        await apiClient.inventory.addWholesalerInventory(newItem);
+      } else {
+        await apiClient.inventory.addMandiInventory(newItem);
+      }
+    } catch (err) {
+      console.warn("Backend inventory save notice:", err);
+    }
+
+    // 4. Save to Cloud Firestore
     if (user?.uid) {
       try {
         if (editingId) {
@@ -136,7 +216,7 @@ export default function InventoryPage() {
           });
         }
       } catch (e) {
-        console.warn("Firestore save error, using local state:", e);
+        console.warn("Firestore database save notice (local persistence active):", e);
       }
     }
 
@@ -146,12 +226,34 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    const updatedList = items.filter((item) => item.id !== id);
+    setItems(updatedList);
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updatedList));
+      } catch (err) {
+        console.warn("LocalStorage delete write error:", err);
+      }
+    }
+
+    // Delete from Backend
+    try {
+      if (isWholesaler) {
+        await apiClient.inventory.deleteWholesalerInventory(id);
+      } else {
+        await apiClient.inventory.deleteMandiInventory(id);
+      }
+    } catch (err) {
+      console.warn("Backend delete notice:", err);
+    }
+
+    // Delete from Firestore
     if (user?.uid) {
       try {
         await deleteDoc(doc(db, collectionName, id));
       } catch (e) {
-        console.warn("Firestore delete error:", e);
+        console.warn("Firestore delete notice:", e);
       }
     }
   };
@@ -162,7 +264,7 @@ export default function InventoryPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <div>
           <h1 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-            {isWholesaler ? "Wholesale Hub & Reefer Logistics" : "Mandi Aggregation & Shelf-Life Tracker"}
+            {isWholesaler ? "Wholesale Hub and Reefer Logistics" : "Mandi Aggregation and Shelf-Life Tracker"}
           </h1>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
             {isWholesaler

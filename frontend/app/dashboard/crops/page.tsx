@@ -48,8 +48,6 @@ interface Crop {
   createdAt?: unknown;
 }
 
-const DEFAULT_FARMER_CROPS: Crop[] = [];
-
 const cropOptions = [
   "Tomato", "Potato", "Onion", "Wheat", "Rice", "Sugarcane",
   "Cotton", "Banana", "Mango", "Apple", "Chilli", "Turmeric",
@@ -61,23 +59,16 @@ const qualityGrades = ["A - Premium", "B - Standard", "C - Economy"];
 const storageTypes = [
   { value: "open_field", label: "Open Field", icon: Sun },
   { value: "cold_storage", label: "Cold Storage", icon: Leaf },
-  { value: "warehouse", label: "Warehouse", icon: Warehouse },
-];
-
-const indianStates = [
-  "Andhra Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
-  "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
-  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  { value: "warehouse", label: "Ventilated Warehouse", icon: Warehouse },
 ];
 
 export default function CropsPage() {
   const { user } = useAuth();
-  const [crops, setCrops] = useState<Crop[]>(DEFAULT_FARMER_CROPS);
+  const [crops, setCrops] = useState<Crop[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     name: "Tomato",
     quantity: 1000,
@@ -89,25 +80,74 @@ export default function CropsPage() {
     storageType: "cold_storage",
   });
 
-  // Real-time listener for crops from Firestore / Backend
+  const storageKey = `perix_crops_${user?.uid || "farmer"}`;
+
+  // 1. Initial Load from LocalStorage for instant hydration
   useEffect(() => {
-    if (!user) return;
-    try {
-      const q = query(collection(db, "crops"), where("farmerId", "==", user.uid));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const cropsData = snapshot.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          })) as Crop[];
-          setCrops(cropsData);
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCrops(parsed);
+          }
         }
-      });
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("Firestore listener fallback to local state:", e);
+      } catch (err) {
+        console.warn("LocalStorage read error:", err);
+      }
     }
-  }, [user]);
+  }, [storageKey]);
+
+  // 2. Fetch from Backend API + Firestore Real-Time Sync
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchBackendCrops() {
+      const backendCrops = await apiClient.crops.getMyCrops();
+      if (isMounted && backendCrops && Array.isArray(backendCrops) && backendCrops.length > 0) {
+        setCrops(backendCrops);
+        localStorage.setItem(storageKey, JSON.stringify(backendCrops));
+      }
+    }
+
+    fetchBackendCrops();
+
+    // Firestore Listener
+    if (user?.uid) {
+      try {
+        const q = query(collection(db, "crops"), where("farmerId", "==", user.uid));
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            if (!snapshot.empty) {
+              const cropsData = snapshot.docs.map((d) => ({
+                id: d.id,
+                ...d.data(),
+              })) as Crop[];
+              if (isMounted) {
+                setCrops(cropsData);
+                localStorage.setItem(storageKey, JSON.stringify(cropsData));
+              }
+            }
+          },
+          (err) => {
+            console.warn("Firestore subscription notice:", err.message);
+          }
+        );
+        return () => {
+          isMounted = false;
+          unsubscribe();
+        };
+      } catch (e) {
+        console.warn("Firestore listener fallback to local state:", e);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid, storageKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,16 +166,33 @@ export default function CropsPage() {
       status: "available",
     };
 
+    let updatedList: Crop[];
     if (editingId) {
-      setCrops((prev) => prev.map((c) => (c.id === editingId ? cropData : c)));
+      updatedList = crops.map((c) => (c.id === editingId ? cropData : c));
     } else {
-      setCrops((prev) => [cropData, ...prev]);
+      updatedList = [cropData, ...crops];
     }
 
-    // Call Backend API
-    await apiClient.crops.createCrop({ ...cropData, farmerId: user?.uid || "demo-farmer" });
+    // 1. Immediately update React state
+    setCrops(updatedList);
 
-    // Sync with Firestore if active
+    // 2. Immediately save to LocalStorage
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updatedList));
+      } catch (err) {
+        console.warn("LocalStorage write error:", err);
+      }
+    }
+
+    // 3. Call Backend API
+    try {
+      await apiClient.crops.createCrop({ ...cropData, farmerId: user?.uid || "demo-farmer" });
+    } catch (err) {
+      console.warn("Backend crop create error:", err);
+    }
+
+    // 4. Sync with Firestore if active
     if (user?.uid) {
       try {
         if (editingId) {
@@ -155,7 +212,17 @@ export default function CropsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this crop entry?")) return;
-    setCrops((prev) => prev.filter((c) => c.id !== id));
+    const updatedList = crops.filter((c) => c.id !== id);
+    setCrops(updatedList);
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updatedList));
+      } catch (err) {
+        console.warn("LocalStorage delete error:", err);
+      }
+    }
+
     if (user?.uid) {
       try {
         await deleteDoc(doc(db, "crops", id));
@@ -189,24 +256,27 @@ export default function CropsPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Farmer Crop Registry & Harvest Log
+              Farmer Crop Registry and Harvest Log
             </h2>
             <span className="badge badge-success">Direct Farm Gate</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Log expected crop yields, location coordinates & trigger automated Mandi price matching
+            Log expected crop yields, location coordinates and trigger automated Mandi price matching
           </p>
         </div>
         <button
           className="btn btn-primary"
-          onClick={() => { setShowForm(!showForm); setEditingId(null); }}
+          onClick={() => {
+            setEditingId(null);
+            setShowForm(!showForm);
+          }}
         >
           {showForm ? <X size={18} /> : <Plus size={18} />}
-          {showForm ? "Cancel" : "Add Crop Batch"}
+          {showForm ? "Cancel" : "Register New Crop"}
         </button>
       </div>
 
-      {/* AI Smart Advisory & Demand Insights Widget */}
+      {/* AI Smart Advisor Widget */}
       <AIAdvisorWidget role="farmer" commodity={crops[0]?.name || "Tomato"} quantityKg={totalQuantity || 2000} />
 
       {/* Summary KPI */}
@@ -279,7 +349,7 @@ export default function CropsPage() {
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
                   <Calendar size={14} style={{ display: "inline", marginRight: "6px" }} />
-                  Expected Harvest Date
+                  Harvest Date
                 </label>
                 <input
                   type="date"
@@ -293,20 +363,6 @@ export default function CropsPage() {
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
                   <MapPin size={14} style={{ display: "inline", marginRight: "6px" }} />
-                  State
-                </label>
-                <select
-                  className="input"
-                  value={form.state}
-                  onChange={(e) => setForm({ ...form, state: e.target.value })}
-                  required
-                >
-                  {indianStates.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
                   District
                 </label>
                 <input
@@ -320,23 +376,24 @@ export default function CropsPage() {
 
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Land Area (acres)
+                  Land Area (Acres)
                 </label>
                 <input
                   type="number"
                   className="input"
                   value={form.landArea}
                   onChange={(e) => setForm({ ...form, landArea: Number(e.target.value) })}
-                  min={0}
-                  step={0.1}
+                  step="0.1"
+                  min={0.1}
+                  required
                 />
               </div>
 
-              <div>
+              <div style={{ gridColumn: "1 / -1" }}>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  Storage Condition
+                  Post-Harvest Storage Facility
                 </label>
-                <div style={{ display: "flex", gap: "8px" }}>
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                   {storageTypes.map(({ value, label, icon: Icon }) => (
                     <button
                       key={value}
@@ -379,6 +436,7 @@ export default function CropsPage() {
         </div>
       )}
 
+      {/* Empty State */}
       {crops.length === 0 && !showForm && (
         <div className="card" style={{ padding: "48px 24px", textAlign: "center", border: "1px dashed var(--border)", marginBottom: "24px" }}>
           <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
@@ -395,88 +453,90 @@ export default function CropsPage() {
       )}
 
       {/* Crops Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }} className="stagger-children">
-        {crops.map((crop) => (
-          <div key={crop.id} className="card" style={{ padding: "20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "12px",
-                    background: "#4CAF5015",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Sprout size={22} color="#4CAF50" />
+      {crops.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }} className="stagger-children">
+          {crops.map((crop) => (
+            <div key={crop.id} className="card" style={{ padding: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      width: "44px",
+                      height: "44px",
+                      borderRadius: "12px",
+                      background: "#4CAF5015",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Sprout size={22} color="#4CAF50" />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
+                      {crop.name}
+                    </h4>
+                    <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                      {crop.district}, {crop.state} • {crop.landArea} acres
+                    </p>
+                  </div>
+                </div>
+                <span className="badge badge-success">
+                  {crop.status}
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "16px" }}>
+                <div>
+                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
+                    Quantity
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
+                    {crop.quantity.toLocaleString()} kg
+                  </p>
                 </div>
                 <div>
-                  <h4 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
-                    {crop.name}
-                  </h4>
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                    {crop.district}, {crop.state} • {crop.landArea} acres
+                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
+                    Quality Grade
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
+                    {crop.qualityGrade}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
+                    Harvest Date
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
+                    {crop.harvestDate}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
+                    Storage
+                  </p>
+                  <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
+                    {crop.storageType.replace("_", " ")}
                   </p>
                 </div>
               </div>
-              <span className="badge badge-success">
-                {crop.status}
-              </span>
-            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "16px" }}>
-              <div>
-                <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                  Quantity
-                </p>
-                <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  {crop.quantity.toLocaleString()} kg
-                </p>
-              </div>
-              <div>
-                <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                  Quality Grade
-                </p>
-                <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  {crop.qualityGrade}
-                </p>
-              </div>
-              <div>
-                <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                  Harvest Date
-                </p>
-                <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  {crop.harvestDate}
-                </p>
-              </div>
-              <div>
-                <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>
-                  Storage
-                </p>
-                <p style={{ fontSize: "15px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  {crop.storageType.replace("_", " ")}
-                </p>
+              <div style={{ display: "flex", gap: "8px", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid var(--border-light)" }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(crop)}>
+                  <Edit2 size={14} /> Edit
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: "var(--error)" }}
+                  onClick={() => handleDelete(crop.id)}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
               </div>
             </div>
-
-            <div style={{ display: "flex", gap: "8px", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid var(--border-light)" }}>
-              <button className="btn btn-ghost btn-sm" onClick={() => handleEdit(crop)}>
-                <Edit2 size={14} /> Edit
-              </button>
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ color: "var(--error)" }}
-                onClick={() => handleDelete(crop.id)}
-              >
-                <Trash2 size={14} /> Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

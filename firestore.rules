@@ -12,46 +12,53 @@ service cloud.firestore {
     }
 
     // 1. Users Collection
-    // Stores Farmer, Mandi, Wholesaler, Retailer, and Admin profiles
     match /users/{userId} {
-      allow read: if true; // Public read for role checking & directory
-      allow write: if isOwner(userId) || !isAuthenticated(); // Allow setup/updates
+      allow read, write: if true;
     }
 
     // 2. Farmer Crops & Harvest Registry
     match /crops/{cropId} {
-      allow read: if true;
-      allow create, update, delete: if true; // Open during development & hackathon demo
+      allow read, write: if true;
     }
 
-    // 3. Mandi & Wholesaler Inventory Batches
+    // 3. Mandi Inventory Batches
+    match /mandi_inventory/{batchId} {
+      allow read, write: if true;
+    }
+
+    // 4. Wholesaler Inventory Batches
+    match /wholesaler_inventory/{batchId} {
+      allow read, write: if true;
+    }
+
+    // 5. Generic Inventory Batches
     match /inventory/{batchId} {
-      allow read: if true;
-      allow create, update, delete: if true;
+      allow read, write: if true;
     }
 
-    // 4. Anonymized B2B Surplus Marketplace
+    // 6. Anonymized B2B Surplus Marketplace
     match /surplus_listings/{listingId} {
-      allow read: if true;
-      allow create, update, delete: if true;
+      allow read, write: if true;
     }
 
-    // 5. Supply Chain Orders & Escrow Transactions
+    // 7. Supply Chain Orders & Escrow Transactions
     match /orders/{orderId} {
-      allow read: if true;
-      allow create, update, delete: if true;
+      allow read, write: if true;
     }
 
-    // 6. Live & Historical Mandi Market Price Cache
+    // 8. Live & Historical Mandi Market Price Cache
     match /mandi_prices/{priceId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
     }
 
-    // 7. 10-Layer AI Pipeline Logs & Telemetry
+    // 9. 10-Layer AI Pipeline Logs & Telemetry
     match /pipeline_logs/{logId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
+    }
+
+    // Fallback for all other development/hackathon collections
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

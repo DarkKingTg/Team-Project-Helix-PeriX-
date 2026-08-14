@@ -76,6 +76,20 @@ export const apiClient = {
         return null;
       }
     },
+    async addMandiInventory(data: Record<string, unknown>, token?: string) {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/inventory/mandi`, {
+          method: "POST",
+          headers: getAuthHeaders(token),
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.warn("Backend addMandiInventory unavailable:", err);
+        return { id: `local-mandi-${Date.now()}`, ...data };
+      }
+    },
     async getWholesalerInventory(token?: string) {
       try {
         const res = await fetch(`${getApiBaseUrl()}/inventory/wholesaler`, {
@@ -86,6 +100,40 @@ export const apiClient = {
       } catch (err) {
         console.warn("Backend /inventory/wholesaler unavailable:", err);
         return null;
+      }
+    },
+    async addWholesalerInventory(data: Record<string, unknown>, token?: string) {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/inventory/wholesaler`, {
+          method: "POST",
+          headers: getAuthHeaders(token),
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.warn("Backend addWholesalerInventory unavailable:", err);
+        return { id: `local-ws-${Date.now()}`, ...data };
+      }
+    },
+    async deleteMandiInventory(id: string, token?: string) {
+      try {
+        await fetch(`${getApiBaseUrl()}/inventory/mandi/${id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(token),
+        });
+      } catch (err) {
+        console.warn("Backend deleteMandiInventory error:", err);
+      }
+    },
+    async deleteWholesalerInventory(id: string, token?: string) {
+      try {
+        await fetch(`${getApiBaseUrl()}/inventory/wholesaler/${id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(token),
+        });
+      } catch (err) {
+        console.warn("Backend deleteWholesalerInventory error:", err);
       }
     },
   },

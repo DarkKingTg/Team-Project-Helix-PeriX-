@@ -13,6 +13,7 @@ import {
   MapPin,
   ArrowRight,
   Sparkles,
+  Package,
 } from "lucide-react";
 
 interface OrderTransfer {
@@ -29,64 +30,9 @@ interface OrderTransfer {
   createdAt: string;
 }
 
-const SAMPLE_ORDERS: OrderTransfer[] = [
-  {
-    id: "ord-1",
-    orderNumber: "ESC-2026-8810",
-    senderNode: "Mandi Aggregator #TN-CB-01 (Coimbatore)",
-    receiverNode: "Apex Agro Wholesalers (Tiruppur Hub)",
-    commodity: "Tomato (Grade A)",
-    quantityKg: 2000,
-    totalAmount: 64000,
-    escrowStatus: "in_transit",
-    routeDistanceKm: 46.2,
-    expectedDelivery: "Today, 4:30 PM",
-    createdAt: "14 Aug 2026, 09:15 AM",
-  },
-  {
-    id: "ord-2",
-    orderNumber: "ESC-2026-8811",
-    senderNode: "Protected Surplus Node #4819 (Salem)",
-    receiverNode: "Royal Grand Commercial Kitchen (Erode)",
-    commodity: "Green Chilli (Spicy Grade)",
-    quantityKg: 150,
-    totalAmount: 11250,
-    escrowStatus: "funds_locked",
-    routeDistanceKm: 62.0,
-    expectedDelivery: "Tomorrow, 11:00 AM",
-    createdAt: "14 Aug 2026, 10:45 AM",
-  },
-  {
-    id: "ord-3",
-    orderNumber: "ESC-2026-8798",
-    senderNode: "Apex Agro Wholesalers (Tiruppur)",
-    receiverNode: "FreshMart Organic Retail (Chennai Metro)",
-    commodity: "Potato (Grade A Bulk)",
-    quantityKg: 4500,
-    totalAmount: 112500,
-    escrowStatus: "completed",
-    routeDistanceKm: 380.0,
-    expectedDelivery: "Delivered 13 Aug",
-    createdAt: "12 Aug 2026, 02:00 PM",
-  },
-  {
-    id: "ord-4",
-    orderNumber: "ESC-2026-8785",
-    senderNode: "Farmer Collective (Pollachi)",
-    receiverNode: "Mandi Aggregator #TN-CB-01",
-    commodity: "Banana (Poovan)",
-    quantityKg: 1200,
-    totalAmount: 45600,
-    escrowStatus: "completed",
-    routeDistanceKm: 38.5,
-    expectedDelivery: "Delivered 12 Aug",
-    createdAt: "11 Aug 2026, 08:30 AM",
-  },
-];
-
 export default function OrdersPage() {
   const { user } = useAuth();
-  const [orders, setOrders] = useState<OrderTransfer[]>(SAMPLE_ORDERS);
+  const [orders, setOrders] = useState<OrderTransfer[]>([]);
   const [filter, setFilter] = useState<string>("all");
 
   const storageKey = `perix_orders_${user?.uid || "global"}`;
@@ -165,110 +111,125 @@ export default function OrdersPage() {
         ))}
       </div>
 
+      {/* Empty State */}
+      {filteredOrders.length === 0 && (
+        <div className="card" style={{ padding: "48px 24px", textAlign: "center", border: "1px dashed var(--border)", marginBottom: "24px" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <ShoppingCart size={28} color="var(--primary)" />
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>No Active Orders Found</h3>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto" }}>
+            Produce purchase orders and surplus marketplace contracts will appear here with live escrow tracking.
+          </p>
+        </div>
+      )}
+
       {/* Orders List Grid */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} className="stagger-children">
-        {filteredOrders.map((ord) => {
-          const badge = getStatusBadge(ord.escrowStatus);
-          return (
-            <div key={ord.id} className="card" style={{ padding: "20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", marginBottom: "14px" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
-                      {ord.orderNumber}
-                    </span>
-                    <span
-                      style={{
-                        padding: "3px 10px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        background: badge.bg,
-                        color: badge.text,
-                      }}
-                    >
-                      {badge.label}
-                    </span>
+      {filteredOrders.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} className="stagger-children">
+          {filteredOrders.map((ord) => {
+            const badge = getStatusBadge(ord.escrowStatus);
+            return (
+              <div key={ord.id} className="card" style={{ padding: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", marginBottom: "14px" }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
+                        {ord.orderNumber}
+                      </span>
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          background: badge.bg,
+                          color: badge.text,
+                        }}
+                      >
+                        {badge.label}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "12px", color: "var(--text-tertiary)", marginTop: "2px" }}>
+                      Initiated: {ord.createdAt}
+                    </p>
                   </div>
-                  <p style={{ fontSize: "12px", color: "var(--text-tertiary)", marginTop: "2px" }}>
-                    Initiated: {ord.createdAt}
-                  </p>
-                </div>
 
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--primary)" }}>
-                    Rs {ord.totalAmount.toLocaleString()}
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--primary)" }}>
+                      Rs {ord.totalAmount.toLocaleString()}
+                    </div>
+                    <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                      {ord.quantityKg.toLocaleString()} kg @ Rs {(ord.totalAmount / ord.quantityKg).toFixed(1)}/kg
+                    </p>
                   </div>
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                    {ord.quantityKg.toLocaleString()} kg @ Rs {(ord.totalAmount / ord.quantityKg).toFixed(1)}/kg
-                  </p>
+                </div>
+
+                {/* Transit Nodes */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto 1fr",
+                    alignItems: "center",
+                    gap: "12px",
+                    background: "var(--surface-hover)",
+                    padding: "12px 16px",
+                    borderRadius: "10px",
+                    marginBottom: "14px",
+                  }}
+                >
+                  <div>
+                    <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>Origin Dispatch</p>
+                    <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{ord.senderNode}</p>
+                  </div>
+                  <div style={{ color: "var(--primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <Truck size={18} />
+                    <span style={{ fontSize: "10px", fontWeight: "600" }}>{ord.routeDistanceKm} km</span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>Destination Receiving</p>
+                    <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{ord.receiverNode}</p>
+                  </div>
+                </div>
+
+                {/* Order Actions */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                    Expected Delivery: <strong>{ord.expectedDelivery}</strong>
+                  </span>
+
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {ord.escrowStatus === "funds_locked" && (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleUpdateStatus(ord.id, "in_transit")}
+                      >
+                        Dispatch Reefer Fleet
+                      </button>
+                    )}
+                    {ord.escrowStatus === "in_transit" && (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleUpdateStatus(ord.id, "delivered")}
+                      >
+                        Confirm Gateway Delivery
+                      </button>
+                    )}
+                    {ord.escrowStatus === "delivered" && (
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => handleUpdateStatus(ord.id, "completed")}
+                      >
+                        Release Escrow Funds
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Transit Nodes */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto 1fr",
-                  alignItems: "center",
-                  gap: "12px",
-                  background: "var(--surface-hover)",
-                  padding: "12px 16px",
-                  borderRadius: "10px",
-                  marginBottom: "14px",
-                }}
-              >
-                <div>
-                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>Origin Dispatch</p>
-                  <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{ord.senderNode}</p>
-                </div>
-                <div style={{ color: "var(--primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <Truck size={18} />
-                  <span style={{ fontSize: "10px", fontWeight: "600" }}>{ord.routeDistanceKm} km</span>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>Destination Receiving</p>
-                  <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{ord.receiverNode}</p>
-                </div>
-              </div>
-
-              {/* Order Actions */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                  Expected Delivery: <strong>{ord.expectedDelivery}</strong>
-                </span>
-
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {ord.escrowStatus === "funds_locked" && (
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => handleUpdateStatus(ord.id, "in_transit")}
-                    >
-                      Dispatch Reefer Fleet
-                    </button>
-                  )}
-                  {ord.escrowStatus === "in_transit" && (
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => handleUpdateStatus(ord.id, "delivered")}
-                    >
-                      Confirm Gateway Delivery
-                    </button>
-                  )}
-                  {ord.escrowStatus === "delivered" && (
-                    <button
-                      className="btn btn-success btn-sm"
-                      onClick={() => handleUpdateStatus(ord.id, "completed")}
-                    >
-                      Release Escrow Funds
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

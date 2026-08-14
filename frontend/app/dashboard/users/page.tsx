@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ShieldCheck,
   User,
@@ -14,8 +14,11 @@ import {
   Mail,
   MapPin,
   ExternalLink,
+  Users,
 } from "lucide-react";
 import { useAuth, UserRole } from "@/lib/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 interface UserRecord {
@@ -30,70 +33,64 @@ interface UserRecord {
   status: "verified" | "pending";
 }
 
-const SAMPLE_USERS: UserRecord[] = [
-  {
-    id: "usr-1",
-    name: "Ramesh Patel (FPO Lead)",
-    email: "ramesh.farmer@perix.in",
-    role: "farmer",
-    location: "Pollachi, Coimbatore, Tamil Nadu",
-    activeItemsCount: 4,
-    totalVolumeTonnes: 14.5,
-    joinedDate: "02-Aug-2026",
-    status: "verified",
-  },
-  {
-    id: "usr-2",
-    name: "Kovai APMC Mandi Aggregator",
-    email: "coimbatore.mandi@perix.in",
-    role: "mandi",
-    location: "Mettupalayam Road, Coimbatore",
-    activeItemsCount: 12,
-    totalVolumeTonnes: 84.0,
-    joinedDate: "15-Jul-2026",
-    status: "verified",
-  },
-  {
-    id: "usr-3",
-    name: "Apex Agro Wholesalers Hub",
-    email: "southagro.wholesaler@perix.in",
-    role: "wholesaler",
-    location: "Avinashi Road, Tiruppur",
-    activeItemsCount: 18,
-    totalVolumeTonnes: 140.0,
-    joinedDate: "20-Jun-2026",
-    status: "verified",
-  },
-  {
-    id: "usr-4",
-    name: "FreshMart Organic Retail",
-    email: "freshmart.retail@perix.in",
-    role: "retailer",
-    location: "Anna Nagar, Chennai Metro",
-    activeItemsCount: 8,
-    totalVolumeTonnes: 4.8,
-    joinedDate: "01-Aug-2026",
-    status: "verified",
-  },
-  {
-    id: "usr-5",
-    name: "Salem Green Agro Cold Chain",
-    email: "salem.cold@perix.in",
-    role: "wholesaler",
-    location: "Omalur Highway, Salem",
-    activeItemsCount: 9,
-    totalVolumeTonnes: 65.0,
-    joinedDate: "10-Aug-2026",
-    status: "verified",
-  },
-];
-
 export default function UsersManagementPage() {
-  const { switchRole } = useAuth();
+  const { user, profile, switchRole } = useAuth();
   const router = useRouter();
-  const [users, setUsers] = useState<UserRecord[]>(SAMPLE_USERS);
+  const [users, setUsers] = useState<UserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
+
+  useEffect(() => {
+    // 1. Fetch live registered users from Firestore
+    try {
+      const q = query(collection(db, "users"));
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const dbUsers = snapshot.docs.map((d) => {
+              const data = d.data();
+              return {
+                id: d.id,
+                name: data.displayName || data.name || "Participant Node",
+                email: data.email || "node@perix.in",
+                role: data.role || "farmer",
+                location: data.location || "Coimbatore, Tamil Nadu",
+                activeItemsCount: data.activeItemsCount || 0,
+                totalVolumeTonnes: data.totalVolumeTonnes || 0,
+                joinedDate: data.createdAt ? "Registered" : "Active",
+                status: "verified",
+              } as UserRecord;
+            });
+            setUsers(dbUsers);
+          } else if (profile) {
+            // Show current logged-in user profile as the verified participant
+            setUsers([
+              {
+                id: profile.uid || "usr-current",
+                name: profile.displayName || "Active Administrator",
+                email: profile.email || "admin@perix.in",
+                role: profile.role || "admin",
+                location: typeof profile.location === "object" && profile.location !== null
+                  ? `${profile.location.district || ""}, ${profile.location.state || ""}`
+                  : String(profile.location || "Tamil Nadu Regional Mesh"),
+                activeItemsCount: 0,
+                totalVolumeTonnes: 0,
+                joinedDate: "Today",
+                status: "verified",
+              },
+            ]);
+          }
+        },
+        (err) => {
+          console.warn("Firestore users query notice:", err.message);
+        }
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Firestore setup notice:", e);
+    }
+  }, [profile]);
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
@@ -131,104 +128,113 @@ export default function UsersManagementPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Network Participant & Node Oversight
+              Network Participant and Node Oversight
             </h2>
             <span className="badge badge-success">Admin Superuser</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Monitor node registrations, active commodity tonnage & cross-tier access permissions
+            Monitor real node registrations, active commodity tonnage, and cross-tier access permissions.
           </p>
         </div>
+      </div>
 
-        {/* Search */}
-        <div style={{ position: "relative", minWidth: "260px" }}>
-          <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
+      {/* Search & Filter Bar */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: "260px" }}>
+          <Search size={18} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
           <input
             type="text"
             className="input"
-            style={{ paddingLeft: "36px" }}
-            placeholder="Search participant nodes..."
+            style={{ paddingLeft: "42px" }}
+            placeholder="Search by participant name, email, or regional node..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
+          {["all", "farmer", "mandi", "wholesaler", "retailer", "admin"].map((r) => (
+            <button
+              key={r}
+              onClick={() => setFilterRole(r)}
+              className={`btn btn-sm ${filterRole === r ? "btn-primary" : "btn-secondary"}`}
+              style={{ textTransform: "capitalize" }}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Role Filter Tabs */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
-        {[
-          { key: "all", label: "All Participants" },
-          { key: "farmer", label: "Farmers" },
-          { key: "mandi", label: "Mandi Agents" },
-          { key: "wholesaler", label: "Wholesalers" },
-          { key: "retailer", label: "Retailers" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilterRole(tab.key)}
-            className={`btn btn-sm ${filterRole === tab.key ? "btn-primary" : "btn-secondary"}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Empty State */}
+      {filteredUsers.length === 0 && (
+        <div className="card" style={{ padding: "48px 24px", textAlign: "center", border: "1px dashed var(--border)" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Users size={28} color="var(--primary)" />
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>No Participants Found</h3>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto" }}>
+            As new farmers, mandis, wholesalers, and retailers register accounts, they will appear in this oversight registry.
+          </p>
+        </div>
+      )}
 
       {/* Users Table */}
-      <div className="card" style={{ padding: "20px", overflowX: "auto" }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Node / Participant</th>
-              <th>Tier Role</th>
-              <th>Geographic Hub</th>
-              <th>Active Inventory</th>
-              <th>Total Throughput</th>
-              <th>Status</th>
-              <th>Admin Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.id}>
-                <td>
-                  <div>
-                    <span style={{ fontWeight: "700", color: "var(--text-primary)" }}>{user.name}</span>
-                    <span style={{ display: "block", fontSize: "12px", color: "var(--text-tertiary)" }}>{user.email}</span>
-                  </div>
-                </td>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    {getRoleIcon(user.role)}
-                    <span style={{ textTransform: "capitalize", fontWeight: "600" }}>{user.role}</span>
-                  </div>
-                </td>
-                <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <MapPin size={13} color="var(--primary)" />
-                    {user.location}
-                  </div>
-                </td>
-                <td style={{ fontWeight: "600" }}>{user.activeItemsCount} batches</td>
-                <td style={{ fontWeight: "700", color: "var(--primary)" }}>{user.totalVolumeTonnes} T</td>
-                <td>
-                  <span className="badge badge-success" style={{ gap: "4px" }}>
-                    <CheckCircle2 size={12} /> Verified Node
-                  </span>
-                </td>
-                <td>
-                  <button
-                    onClick={() => handleInspectAsRole(user.role)}
-                    className="btn btn-secondary btn-sm"
-                    style={{ gap: "4px", fontSize: "11px" }}
-                  >
-                    Inspect Dashboard <ExternalLink size={12} />
-                  </button>
-                </td>
+      {filteredUsers.length > 0 && (
+        <div className="card" style={{ padding: "20px", overflowX: "auto" }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Participant</th>
+                <th>Role Tier</th>
+                <th>Regional Node</th>
+                <th>Registration</th>
+                <th>Verification</th>
+                <th>Role View</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <div>
+                      <span style={{ fontWeight: "600", color: "var(--text-primary)", display: "block" }}>{u.name}</span>
+                      <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{u.email}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {getRoleIcon(u.role)}
+                      <span style={{ textTransform: "capitalize", fontWeight: "600", fontSize: "13px" }}>{u.role}</span>
+                    </div>
+                  </td>
+                  <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <MapPin size={13} color="var(--text-tertiary)" />
+                      {u.location}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{u.joinedDate}</td>
+                  <td>
+                    <span className="badge badge-success">
+                      <CheckCircle2 size={12} /> {u.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => handleInspectAsRole(u.role)}
+                      title={`Switch to ${u.role} workspace view`}
+                    >
+                      <ExternalLink size={14} /> Switch
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

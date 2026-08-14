@@ -1,7 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  addDoc,
+  query,
+  onSnapshot,
+  serverTimestamp,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import {
   Store,
   ShieldCheck,
@@ -32,86 +42,73 @@ interface SurplusListing {
   hoursRemaining: number;
   quality: string;
   status: "available" | "in_escrow" | "completed";
+  userId?: string;
 }
 
-const INITIAL_SURPLUS: SurplusListing[] = [
-  {
-    id: "surplus-101",
-    anonymizedSeller: "Retail Node #TN-CB-04",
-    locationArea: "RS Puram, Coimbatore",
-    distanceKm: 4.2,
-    commodity: "Tomato (Ripe Grade-A)",
-    quantityKg: 350,
-    originalPrice: 40,
-    discountedPrice: 22,
-    discountPct: 45,
-    hoursRemaining: 36,
-    quality: "Grade A (Prime for Chef / Sauce Prep)",
-    status: "available",
-  },
-  {
-    id: "surplus-102",
-    anonymizedSeller: "Wholesale Depot #TN-TR-09",
-    locationArea: "Avinashi Road, Tiruppur",
-    distanceKm: 18.5,
-    commodity: "Banana (Cavendish)",
-    quantityKg: 600,
-    originalPrice: 45,
-    discountedPrice: 26,
-    discountPct: 42,
-    hoursRemaining: 48,
-    quality: "Grade A - Sweet Ripe",
-    status: "available",
-  },
-  {
-    id: "surplus-103",
-    anonymizedSeller: "Hypermarket Outlet #TN-SL-02",
-    locationArea: "Salem Bypass Corridor",
-    distanceKm: 42.0,
-    commodity: "Green Chilli (Spicy)",
-    quantityKg: 180,
-    originalPrice: 120,
-    discountedPrice: 75,
-    discountPct: 37,
-    hoursRemaining: 72,
-    quality: "Grade A - Fresh Harvest",
-    status: "available",
-  },
-  {
-    id: "surplus-104",
-    anonymizedSeller: "Aggregator Hub #TN-ER-14",
-    locationArea: "Perundurai Junction, Erode",
-    distanceKm: 28.3,
-    commodity: "Potato (Medium)",
-    quantityKg: 1200,
-    originalPrice: 28,
-    discountedPrice: 18,
-    discountPct: 35,
-    hoursRemaining: 120,
-    quality: "Grade B+ Standard Bulk",
-    status: "available",
-  },
-];
-
 export default function MarketplacePage() {
-  const { profile } = useAuth();
-  const [listings, setListings] = useState<SurplusListing[]>(INITIAL_SURPLUS);
+  const { user, profile } = useAuth();
+  const [listings, setListings] = useState<SurplusListing[]>([]);
   const [activeTab, setActiveTab] = useState<"browse" | "my-listings">("browse");
   const [showListModal, setShowListModal] = useState(false);
   const [escrowSuccess, setEscrowSuccess] = useState<string | null>(null);
 
+  const storageKey = "perix_marketplace_listings";
+
+  // Initial Load from LocalStorage Cache
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setListings(parsed);
+          }
+        }
+      } catch (err) {
+        console.warn("Marketplace cache read error:", err);
+      }
+    }
+  }, []);
+
+  // Real-time Firestore Sync
+  useEffect(() => {
+    try {
+      const q = query(collection(db, "surplus_listings"));
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const dbListings = snapshot.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+            })) as SurplusListing[];
+            setListings(dbListings);
+            localStorage.setItem(storageKey, JSON.stringify(dbListings));
+          }
+        },
+        (err) => {
+          console.warn("Firestore marketplace subscription notice:", err.message);
+        }
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Firestore setup notice:", e);
+    }
+  }, []);
+
   // New Listing Form
   const [form, setForm] = useState({
-    commodity: "Strawberry / Ripe Fruit",
+    commodity: "Tomato",
     quantityKg: 200,
-    originalPrice: 150,
-    discountedPrice: 90,
+    originalPrice: 40,
+    discountedPrice: 24,
     hoursRemaining: 24,
     locationArea: "Coimbatore City North",
     quality: "Grade A - Table Grade",
   });
 
-  const handleCreateListing = (e: React.FormEvent) => {
+  const handleCreateListing = async (e: React.FormEvent) => {
     e.preventDefault();
     const discount = Math.round(
       ((form.originalPrice - form.discountedPrice) / form.originalPrice) * 100
@@ -129,18 +126,61 @@ export default function MarketplacePage() {
       hoursRemaining: Number(form.hoursRemaining),
       quality: form.quality,
       status: "available",
+      userId: user?.uid,
     };
-    setListings([newEntry, ...listings]);
+
+    const updated = [newEntry, ...listings];
+    setListings(updated);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Marketplace cache write error:", err);
+      }
+    }
+
+    try {
+      await addDoc(collection(db, "surplus_listings"), {
+        ...newEntry,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn("Firestore marketplace listing save notice:", err);
+    }
+
     setShowListModal(false);
   };
 
-  const handleInitiateEscrow = (id: string, commodity: string) => {
-    setListings((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: "in_escrow" } : item))
+  const handleInitiateEscrow = async (id: string, commodity: string) => {
+    const updated = listings.map((item) =>
+      item.id === id ? { ...item, status: "in_escrow" as const } : item
     );
-    setEscrowSuccess(`Escrow smart contract initiated for ${commodity}! Rebalancing route & transfer order generated.`);
+    setListings(updated);
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Marketplace cache write error:", err);
+      }
+    }
+
+    try {
+      await updateDoc(doc(db, "surplus_listings", id), {
+        status: "in_escrow",
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn("Firestore escrow update notice:", err);
+    }
+
+    setEscrowSuccess(`Escrow smart contract initiated for ${commodity}. Rebalancing route and transfer order generated.`);
     setTimeout(() => setEscrowSuccess(null), 5000);
   };
+
+  const filteredListings = listings.filter((item) =>
+    activeTab === "browse" ? item.status === "available" : item.status === "in_escrow"
+  );
 
   return (
     <div className="page-container">
@@ -182,7 +222,7 @@ export default function MarketplacePage() {
               <span className="badge badge-success">RLS Privacy Active</span>
             </div>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>
-              Offload over-ordered stock or buy discounted wholesale ingredients without exposing commercial identity to competitors.
+              Offload over-ordered stock or buy discounted wholesale produce without exposing commercial identity to competitors.
             </p>
           </div>
         </div>
@@ -219,28 +259,49 @@ export default function MarketplacePage() {
           onClick={() => setActiveTab("browse")}
           className={`btn ${activeTab === "browse" ? "btn-primary" : "btn-secondary"}`}
         >
-          Available Nearby Surplus ({listings.filter((l) => l.status === "available").length})
+          <Store size={16} /> Available Surplus Listings
         </button>
         <button
           onClick={() => setActiveTab("my-listings")}
           className={`btn ${activeTab === "my-listings" ? "btn-primary" : "btn-secondary"}`}
         >
-          Active Escrow Transfers ({listings.filter((l) => l.status === "in_escrow").length})
+          <Truck size={16} /> In-Escrow Rebalancing
         </button>
       </div>
 
+      {/* Empty State */}
+      {filteredListings.length === 0 && (
+        <div className="card" style={{ padding: "48px 24px", textAlign: "center", border: "1px dashed var(--border)", marginBottom: "24px" }}>
+          <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Store size={28} color="var(--primary)" />
+          </div>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>
+            {activeTab === "browse" ? "No Active Surplus Listings" : "No Active In-Escrow Transfers"}
+          </h3>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 20px" }}>
+            {activeTab === "browse"
+              ? "All surplus stock across the mesh has been cleared. Click below to list any excess produce for nearby buyers."
+              : "When a surplus batch is secured via smart escrow, transit and routing contracts will appear here."}
+          </p>
+          {activeTab === "browse" && (
+            <button className="btn btn-primary" onClick={() => setShowListModal(true)}>
+              <Plus size={16} /> List Anonymous Surplus
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Listings Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-          gap: "20px",
-        }}
-        className="stagger-children"
-      >
-        {listings
-          .filter((item) => (activeTab === "browse" ? item.status === "available" : item.status === "in_escrow"))
-          .map((item) => {
+      {filteredListings.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+            gap: "20px",
+          }}
+          className="stagger-children"
+        >
+          {filteredListings.map((item) => {
             const savingsTotal = (item.originalPrice - item.discountedPrice) * item.quantityKg;
 
             return (
@@ -290,104 +351,113 @@ export default function MarketplacePage() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <span style={{ fontSize: "12px", color: "var(--text-tertiary)", textDecoration: "line-through" }}>
-                          ₹{item.originalPrice}/kg
+                          Rs {item.originalPrice}/kg
                         </span>
                         <div style={{ fontSize: "24px", fontWeight: "800", color: "var(--primary)" }}>
-                          ₹{item.discountedPrice}
+                          Rs {item.discountedPrice}
                           <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)" }}>/kg</span>
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
-                        <span className="badge badge-warning" style={{ fontSize: "13px", padding: "4px 10px" }}>
-                          {item.discountPct}% OFF
+                        <span
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "20px",
+                            background: "rgba(244,67,54,0.12)",
+                            color: "#D32F2F",
+                            fontSize: "13px",
+                            fontWeight: "700",
+                            display: "inline-block",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          -{item.discountPct}% OFF
                         </span>
-                        <p style={{ fontSize: "11px", color: "var(--text-tertiary)", marginTop: "4px" }}>
-                          Save ₹{savingsTotal.toLocaleString()} total
-                        </p>
+                        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                          Save Rs {savingsTotal.toLocaleString()}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Volume & Expiry urgency */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "18px" }}>
-                    <div style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--border-light)" }}>
-                      <p style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Total Batch</p>
-                      <p style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
-                        {item.quantityKg} kg
-                      </p>
+                  {/* Lot Details */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+                    <div style={{ background: "var(--surface)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>Batch Volume</span>
+                      <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
+                        {item.quantityKg.toLocaleString()} kg
+                      </div>
                     </div>
-                    <div style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--border-light)" }}>
-                      <p style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Optimal Window</p>
-                      <p style={{ fontSize: "15px", fontWeight: "700", color: item.hoursRemaining < 48 ? "#E65100" : "var(--text-primary)" }}>
-                        ⏳ {item.hoursRemaining} hrs left
-                      </p>
+                    <div style={{ background: "var(--surface)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                      <span style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>Fresh Window</span>
+                      <div style={{ fontSize: "14px", fontWeight: "700", color: item.hoursRemaining < 36 ? "var(--error)" : "var(--text-primary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Clock size={14} /> {item.hoursRemaining}h remaining
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Action CTA */}
+                {/* Buy / Escrow Action Button */}
                 {item.status === "available" ? (
                   <button
-                    onClick={() => handleInitiateEscrow(item.id, item.commodity)}
                     className="btn btn-primary"
                     style={{ width: "100%", justifyContent: "center" }}
+                    onClick={() => handleInitiateEscrow(item.id, item.commodity)}
                   >
-                    Initiate Smart Escrow Transfer <ArrowRight size={16} />
+                    <Lock size={16} /> Secure with Smart Escrow
                   </button>
                 ) : (
                   <div
                     style={{
-                      padding: "10px",
                       background: "rgba(33,150,243,0.1)",
-                      borderRadius: "8px",
+                      border: "1px solid rgba(33,150,243,0.3)",
+                      borderRadius: "10px",
+                      padding: "10px",
                       textAlign: "center",
                       color: "#1565C0",
                       fontSize: "13px",
                       fontWeight: "600",
                     }}
                   >
-                    🔒 In Escrow Transit • Pickup Dispatched
+                    Escrow Locked • Route Generating
                   </div>
                 )}
               </div>
             );
           })}
-      </div>
+        </div>
+      )}
 
-      {/* Modal for Creating Anonymous Listing */}
+      {/* List Anonymous Surplus Modal */}
       {showListModal && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.6)",
+            background: "rgba(0,0,0,0.5)",
             backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 100,
+            zIndex: 1000,
             padding: "20px",
           }}
         >
-          <div className="card animate-scale-in" style={{ maxWidth: "520px", width: "100%", padding: "28px", maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="card animate-scale-in" style={{ width: "100%", maxWidth: "480px", padding: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <ShieldCheck size={22} color="var(--primary)" />
-                <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)" }}>
-                  Post Anonymized Surplus
-                </h3>
+                <ShieldCheck size={20} color="var(--primary)" />
+                <h3 style={{ fontSize: "18px", fontWeight: "700" }}>List Anonymous Surplus Lot</h3>
               </div>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowListModal(false)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleCreateListing}>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                    Commodity & Variety
-                  </label>
+                  <label className="label">Commodity & Grade</label>
                   <input
                     type="text"
                     className="input"
@@ -399,9 +469,7 @@ export default function MarketplacePage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                      Surplus Quantity (kg)
-                    </label>
+                    <label className="label">Surplus Volume (kg)</label>
                     <input
                       type="number"
                       className="input"
@@ -411,9 +479,7 @@ export default function MarketplacePage() {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                      Hours Before Expiry
-                    </label>
+                    <label className="label">Time Remaining (Hours)</label>
                     <input
                       type="number"
                       className="input"
@@ -426,9 +492,7 @@ export default function MarketplacePage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                      Standard Retail Price (₹/kg)
-                    </label>
+                    <label className="label">Original Rate (Rs/kg)</label>
                     <input
                       type="number"
                       className="input"
@@ -438,9 +502,7 @@ export default function MarketplacePage() {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                      Surplus Discounted Price (₹/kg)
-                    </label>
+                    <label className="label">Discounted Rate (Rs/kg)</label>
                     <input
                       type="number"
                       className="input"
@@ -452,9 +514,7 @@ export default function MarketplacePage() {
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                    District / General Hub Area
-                  </label>
+                  <label className="label">Pickup Corridor Area</label>
                   <input
                     type="text"
                     className="input"
@@ -463,27 +523,14 @@ export default function MarketplacePage() {
                     required
                   />
                 </div>
-
-                <div
-                  style={{
-                    padding: "12px 14px",
-                    borderRadius: "8px",
-                    background: "rgba(46,125,50,0.08)",
-                    border: "1px solid rgba(46,125,50,0.2)",
-                    fontSize: "12px",
-                    color: "var(--primary-dark)",
-                  }}
-                >
-                  🔒 <strong>Privacy Assurance:</strong> Your store/depot identity is fully masked. Nearby verified restaurants and commercial kitchens will only see your anonymized node code and approximate distance.
-                </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowListModal(false)}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Publish Anonymous Listing
+                  Publish Anonymous Lot
                 </button>
               </div>
             </form>

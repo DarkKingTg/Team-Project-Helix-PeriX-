@@ -31,6 +31,8 @@ out/
 backend/dist/
 
 # Environment Variables (Keep sensitive keys safe)
+.env
+.env*.local
 .env.local
 .env.development.local
 .env.test.local

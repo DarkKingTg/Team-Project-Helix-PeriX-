@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 import os
 
-load_dotenv()
+# Load root unified .env and local overrides
+load_dotenv(find_dotenv(usecwd=True))
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+if os.path.exists(root_env):
+    load_dotenv(root_env)
 
 from app.routers import forecast, pricing, health, pipeline, market, advisor
 

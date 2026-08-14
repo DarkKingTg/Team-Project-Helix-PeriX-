@@ -10,6 +10,7 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -30,8 +31,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const messages = await getMessages();
 
   return (
-    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-inter), Inter, sans-serif" }}>
+    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning data-scroll-behavior="smooth">
+      <body className={`${inter.className} min-h-full flex flex-col`} style={{ fontFamily: "var(--font-inter), Inter, sans-serif" }}>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <AuthProvider>{children}</AuthProvider>

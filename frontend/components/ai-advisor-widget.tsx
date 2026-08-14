@@ -30,19 +30,19 @@ export function AIAdvisorWidget({
 }: AIAdvisorWidgetProps) {
   const [loading, setLoading] = useState(false);
   const [advisory, setAdvisory] = useState<any>({
-    primary_headline: `Optimal Harvest & Dispatch Strategy for ${commodity}`,
+    primary_headline: `Optimal Harvest and Dispatch Strategy for ${commodity}`,
     urgency_level: "medium",
     action_items: [
-      `⏰ Stagger harvest over the next 48-72 hours to capture projected price rise (+₹2.80/kg).`,
-      `📍 Inter-Mandi Arbitrage: Koyambedu Wholesale (Chennai) is paying +₹4.50/kg extra (₹9,000 extra net profit).`,
-      `❄️ Storage Quality: Move harvested batches to shaded/ventilated storage to prevent moisture loss.`,
-      `🛡️ Pre-Sale Lock: List on PeriX Anonymized B2B Surplus marketplace to lock in guaranteed price.`,
+      `Harvest Timing: Stagger harvest over the next 48-72 hours to capture projected price rise (+Rs 2.80/kg).`,
+      `Inter-Mandi Arbitrage: Koyambedu Wholesale (Chennai) is paying +Rs 4.50/kg extra (Rs 9,000 extra net profit).`,
+      `Storage Quality: Move harvested batches to shaded and ventilated storage to prevent moisture loss.`,
+      `Pre-Sale Lock: List on PeriX Anonymized B2B Surplus marketplace to lock in guaranteed price.`,
     ],
-    demand_outlook: `📈 Bullish: Demand trend is upward (+6.2% expected over next 7 days). Upcoming festival expected to boost regional demand by +35%.`,
-    weather_advisory: `🌤️ Weather Alert: Moderate ambient temperatures (29°C) with dry conditions in Coimbatore. Ideal 48-hour harvesting window.`,
+    demand_outlook: `Bullish: Demand trend is upward (+6.2% expected over next 7 days). Upcoming festival expected to boost regional demand by +35%.`,
+    weather_advisory: `Weather Alert: Moderate ambient temperatures (29 deg C) with dry conditions in Coimbatore. Ideal 48-hour harvesting window.`,
     arbitrage_highlights: [
-      { target_mandi: "Koyambedu Wholesale (Chennai)", price_per_kg: 38.5, price_advantage: "+₹4.50/kg", estimated_extra_revenue: "₹9,000.00" },
-      { target_mandi: "Yeshwanthpur APMC (Bengaluru)", price_per_kg: 37.0, price_advantage: "+₹3.00/kg", estimated_extra_revenue: "₹6,000.00" },
+      { target_mandi: "Koyambedu Wholesale (Chennai)", price_per_kg: 38.5, price_advantage: "+Rs 4.50/kg", estimated_extra_revenue: "Rs 9,000.00" },
+      { target_mandi: "Yeshwanthpur APMC (Bengaluru)", price_per_kg: 37.0, price_advantage: "+Rs 3.00/kg", estimated_extra_revenue: "Rs 6,000.00" },
     ],
   });
 
@@ -90,7 +90,7 @@ export function AIAdvisorWidget({
             <Sparkles size={16} color="var(--primary)" />
           </div>
           <h3 style={{ fontSize: "16px", fontWeight: "800", color: "var(--text-primary)" }}>
-            PeriX AI Smart Advisor & Demand Intelligence
+            PeriX AI Smart Advisor and Demand Intelligence
           </h3>
           <span className="badge badge-success" style={{ fontSize: "11px" }}>
             Real-Time Inference
@@ -136,7 +136,7 @@ export function AIAdvisorWidget({
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }} className="grid-charts">
         <div style={{ padding: "10px 12px", borderRadius: "8px", background: "rgba(33,150,243,0.06)", border: "1px solid rgba(33,150,243,0.2)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "700", color: "#1976D2", marginBottom: "4px" }}>
-            <TrendingUp size={14} /> Demand Outlook & Festival Catalysts
+            <TrendingUp size={14} /> Demand Outlook and Festival Catalysts
           </div>
           <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: "1.4" }}>
             {advisory.demand_outlook}

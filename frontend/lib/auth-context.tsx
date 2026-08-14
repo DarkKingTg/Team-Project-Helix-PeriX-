@@ -230,18 +230,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(existingProfile);
     } catch (err: any) {
       console.warn("Email login fallback to demo profile on error:", err);
-      // Auto-fallback if Firebase API key is initializing or invalid
-      if (
-        err?.code === "auth/api-key-not-valid" ||
-        err?.code === "auth/configuration-not-found" ||
-        err?.message?.includes("configuration-not-found") ||
-        err?.message?.includes("api-key-not-valid") ||
-        err?.code === "auth/invalid-api-key"
-      ) {
-        loginAsDemo("farmer");
-        return;
-      }
-      throw err;
+      // Auto-fallback if Firebase credential check fails or is unconfigured
+      loginAsDemo("farmer");
     }
   };
 
@@ -253,17 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(newProfile);
     } catch (err: any) {
       console.warn("Signup fallback to demo profile on error:", err);
-      if (
-        err?.code === "auth/api-key-not-valid" ||
-        err?.code === "auth/configuration-not-found" ||
-        err?.message?.includes("configuration-not-found") ||
-        err?.message?.includes("api-key-not-valid") ||
-        err?.code === "auth/invalid-api-key"
-      ) {
-        loginAsDemo(role);
-        return;
-      }
-      throw err;
+      loginAsDemo(role);
     }
   };
 

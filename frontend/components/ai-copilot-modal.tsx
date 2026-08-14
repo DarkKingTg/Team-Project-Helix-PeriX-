@@ -35,7 +35,7 @@ export function AICopilotModal({ role = "farmer" }: { role?: string }) {
   const [messages, setMessages] = useState<Array<{ sender: "ai" | "user"; text: string }>>([
     {
       sender: "ai",
-      text: "🌿 **Hello! I am the PeriX AI Agricultural Advisor.**\n\nI analyze real-time Agmarknet mandi rates, 7-day weather forecasts, and cold-chain sensor data to maximize your profits and prevent spoilage. How can I help you today?",
+      text: "**Hello! I am the PeriX AI Agricultural Advisor.**\n\nI analyze real-time Agmarknet mandi rates, 7-day weather forecasts, and cold-chain sensor data to maximize your profits and prevent spoilage. How can I help you today?",
     },
   ]);
 
@@ -121,7 +121,7 @@ export function AICopilotModal({ role = "farmer" }: { role?: string }) {
               <Bot size={20} />
               <div>
                 <h4 style={{ fontSize: "14px", fontWeight: "700", margin: 0 }}>PeriX AI Copilot</h4>
-                <p style={{ fontSize: "11px", opacity: 0.9, margin: 0 }}>Live Agmarknet & Waste AI</p>
+                <p style={{ fontSize: "11px", opacity: 0.9, margin: 0 }}>Live Agmarknet and Waste AI</p>
               </div>
             </div>
 
@@ -160,19 +160,19 @@ export function AICopilotModal({ role = "farmer" }: { role?: string }) {
               onClick={() => handleSendMessage("What is the best time to harvest my tomato crop?")}
               style={{ fontSize: "11px", padding: "4px 8px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", cursor: "pointer", whiteSpace: "nowrap" }}
             >
-              🍅 Harvest Timing?
+              Harvest Timing?
             </button>
             <button
               onClick={() => handleSendMessage("Which mandi has the highest price right now?")}
               style={{ fontSize: "11px", padding: "4px 8px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", cursor: "pointer", whiteSpace: "nowrap" }}
             >
-              📍 Mandi Arbitrage?
+              Mandi Arbitrage?
             </button>
             <button
               onClick={() => handleSendMessage("How do I prevent post-harvest spoilage?")}
               style={{ fontSize: "11px", padding: "4px 8px", borderRadius: "12px", background: "var(--surface)", border: "1px solid var(--border)", cursor: "pointer", whiteSpace: "nowrap" }}
             >
-              ❄️ Prevent Spoilage?
+              Prevent Spoilage?
             </button>
           </div>
 

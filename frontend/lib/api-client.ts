@@ -3,8 +3,25 @@
  * Connects Next.js Frontend -> NestJS Backend (port 3001) and FastAPI ML service (port 8000)
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
-const ML_BASE_URL = process.env.NEXT_PUBLIC_ML_URL || "http://localhost:8000/api";
+function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host && host !== "localhost" && host !== "127.0.0.1") {
+      return `http://${host}:3001/api/v1`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+}
+
+function getMlBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host && host !== "localhost" && host !== "127.0.0.1") {
+      return `http://${host}:8000/api`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_ML_URL || "http://localhost:8000/api";
+}
 
 function getAuthHeaders(userToken?: string | null) {
   const token = userToken || (typeof window !== "undefined" ? localStorage.getItem("perix_token") || "demo-token-user001" : "demo-token-user001");
@@ -19,7 +36,7 @@ export const apiClient = {
   crops: {
     async getMyCrops(token?: string) {
       try {
-        const res = await fetch(`${API_BASE_URL}/crops/my`, {
+        const res = await fetch(`${getApiBaseUrl()}/crops/my`, {
           headers: getAuthHeaders(token),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -31,7 +48,7 @@ export const apiClient = {
     },
     async createCrop(data: Record<string, unknown>, token?: string) {
       try {
-        const res = await fetch(`${API_BASE_URL}/crops`, {
+        const res = await fetch(`${getApiBaseUrl()}/crops`, {
           method: "POST",
           headers: getAuthHeaders(token),
           body: JSON.stringify(data),
@@ -49,7 +66,7 @@ export const apiClient = {
   inventory: {
     async getMandiInventory(token?: string) {
       try {
-        const res = await fetch(`${API_BASE_URL}/inventory/mandi`, {
+        const res = await fetch(`${getApiBaseUrl()}/inventory/mandi`, {
           headers: getAuthHeaders(token),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -61,7 +78,7 @@ export const apiClient = {
     },
     async getWholesalerInventory(token?: string) {
       try {
-        const res = await fetch(`${API_BASE_URL}/inventory/wholesaler`, {
+        const res = await fetch(`${getApiBaseUrl()}/inventory/wholesaler`, {
           headers: getAuthHeaders(token),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -77,7 +94,7 @@ export const apiClient = {
   predictions: {
     async getDemandForecast(commodity: string, state: string, days: number = 30) {
       try {
-        const res = await fetch(`${API_BASE_URL}/predictions/demand`, {
+        const res = await fetch(`${getApiBaseUrl()}/predictions/demand`, {
           method: "POST",
           headers: getAuthHeaders(),
           body: JSON.stringify({ commodity, state, days }),
@@ -89,7 +106,7 @@ export const apiClient = {
 
       // Direct ML service fallback
       try {
-        const directRes = await fetch(`${ML_BASE_URL}/forecast/demand`, {
+        const directRes = await fetch(`${getMlBaseUrl()}/forecast/demand`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ commodity, state, days }),
@@ -104,7 +121,7 @@ export const apiClient = {
 
     async getDynamicPricing(commodity: string, currentPrice: number, daysToExpiry: number, quantity: number) {
       try {
-        const res = await fetch(`${API_BASE_URL}/predictions/dynamic-pricing`, {
+        const res = await fetch(`${getApiBaseUrl()}/predictions/dynamic-pricing`, {
           method: "POST",
           headers: getAuthHeaders(),
           body: JSON.stringify({
@@ -121,7 +138,7 @@ export const apiClient = {
 
       // Direct ML service fallback
       try {
-        const directRes = await fetch(`${ML_BASE_URL}/pricing/dynamic`, {
+        const directRes = await fetch(`${getMlBaseUrl()}/pricing/dynamic`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -148,7 +165,7 @@ export const apiClient = {
         if (commodity) params.append("commodity", commodity);
         if (state) params.append("state", state);
 
-        const res = await fetch(`${API_BASE_URL}/market-data/prices?${params.toString()}`, {
+        const res = await fetch(`${getApiBaseUrl()}/market-data/prices?${params.toString()}`, {
           headers: getAuthHeaders(),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -160,7 +177,7 @@ export const apiClient = {
     },
     async getTrends(commodity: string, days: number = 30) {
       try {
-        const res = await fetch(`${API_BASE_URL}/market-data/trends?commodity=${encodeURIComponent(commodity)}&days=${days}`, {
+        const res = await fetch(`${getApiBaseUrl()}/market-data/trends?commodity=${encodeURIComponent(commodity)}&days=${days}`, {
           headers: getAuthHeaders(),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -176,7 +193,7 @@ export const apiClient = {
   pipeline: {
     async evaluate(payload: Record<string, unknown>) {
       try {
-        const res = await fetch(`${ML_BASE_URL}/pipeline/evaluate`, {
+        const res = await fetch(`${getMlBaseUrl()}/pipeline/evaluate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -189,7 +206,7 @@ export const apiClient = {
     },
     async triggerRetrain() {
       try {
-        const res = await fetch(`${ML_BASE_URL}/pipeline/retrain`, {
+        const res = await fetch(`${getMlBaseUrl()}/pipeline/retrain`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
@@ -205,7 +222,7 @@ export const apiClient = {
   advisor: {
     async getTips(query: Record<string, unknown>) {
       try {
-        const res = await fetch(`${ML_BASE_URL}/advisor/tips`, {
+        const res = await fetch(`${getMlBaseUrl()}/advisor/tips`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(query),
@@ -218,7 +235,7 @@ export const apiClient = {
     },
     async chat(message: string, language: string = "en", role: string = "farmer") {
       try {
-        const res = await fetch(`${ML_BASE_URL}/advisor/chat`, {
+        const res = await fetch(`${getMlBaseUrl()}/advisor/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message, language, persona_role: role }),
@@ -228,7 +245,7 @@ export const apiClient = {
         console.warn("Advisor chat API failed:", err);
       }
       return {
-        reply: "📊 PeriX AI Copilot: Based on official Agmarknet records, Tomato modal rate in Coimbatore is ₹34.00/kg with an upward price trajectory (+6.0%).",
+        reply: "PeriX AI Copilot: Based on official Agmarknet records, Tomato modal rate in Coimbatore is Rs 34.00/kg with an upward price trajectory (+6.0%).",
         language,
         persona_role: role,
       };

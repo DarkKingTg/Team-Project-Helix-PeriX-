@@ -94,10 +94,30 @@ function formatAuthError(err: unknown): string {
   if (msg.includes("auth/network-request-failed") || msg.includes("Failed to fetch")) {
     return "Network connection timed out. Please check your internet or use the 1-Click Demo buttons.";
   }
+  if (msg.includes("auth/unauthorized-domain")) {
+    return "This domain/IP is not added to Firebase Authorized Domains. Please add 'localhost' in Firebase Console > Authentication > Settings > Authorized domains.";
+  }
   if (msg.includes("auth/popup-closed-by-user")) {
     return "Google sign-in popup was closed before completing.";
   }
   return msg.replace(/^Firebase:\s*Error\s*\((.*?)\)\.?/i, "$1").replace(/-/g, " ");
+}
+
+function getDashboardRouteForRole(role?: UserRole | string | null): string {
+  switch (role) {
+    case "farmer":
+      return "/dashboard/crops";
+    case "mandi":
+      return "/dashboard/inventory";
+    case "wholesaler":
+      return "/dashboard/distribution";
+    case "retailer":
+      return "/dashboard/pricing";
+    case "admin":
+      return "/dashboard";
+    default:
+      return "/dashboard";
+  }
 }
 
 export default function LoginPage() {
@@ -114,7 +134,7 @@ export default function LoginPage() {
 
   const handleQuickDemo = (role: UserRole) => {
     loginAsDemo(role);
-    router.push("/dashboard");
+    router.push(getDashboardRouteForRole(role));
   };
 
   const handleGoogleLogin = async () => {
@@ -122,11 +142,11 @@ export default function LoginPage() {
       setLoading(true);
       setError("");
       await signInWithGoogle();
-      router.push("/dashboard");
+      router.push(getDashboardRouteForRole(profile?.role || "farmer"));
     } catch (err: unknown) {
       console.warn("Google sign-in popup error, auto-routing via demo profile:", err);
       loginAsDemo("farmer");
-      router.push("/dashboard");
+      router.push("/dashboard/crops");
     } finally {
       setLoading(false);
     }
@@ -138,7 +158,8 @@ export default function LoginPage() {
       setLoading(true);
       setError("");
       await signInWithEmail(email, password);
-      router.push("/dashboard");
+      const targetRole = email.includes("farmer") ? "farmer" : email.includes("mandi") ? "mandi" : email.includes("wholesaler") ? "wholesaler" : email.includes("retail") ? "retailer" : email.includes("admin") ? "admin" : profile?.role || "farmer";
+      router.push(getDashboardRouteForRole(targetRole));
     } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
@@ -156,7 +177,7 @@ export default function LoginPage() {
       setLoading(true);
       setError("");
       await signUpWithEmail(email, password, name, selectedRole);
-      router.push("/dashboard");
+      router.push(getDashboardRouteForRole(selectedRole));
     } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
@@ -170,7 +191,7 @@ export default function LoginPage() {
       try {
         setLoading(true);
         await updateUserRole(role);
-        router.push("/dashboard");
+        router.push(getDashboardRouteForRole(role));
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to set role");
       } finally {
@@ -183,7 +204,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user && profile) {
-      router.push("/dashboard");
+      router.push(getDashboardRouteForRole(profile.role));
     }
   }, [user, profile, router]);
 

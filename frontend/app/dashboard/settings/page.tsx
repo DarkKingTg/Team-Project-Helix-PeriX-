@@ -43,7 +43,6 @@ const ROLES: { role: UserRole; icon: typeof Sprout; color: string }[] = [
   { role: "farmer", icon: Sprout, color: "#4CAF50" },
   { role: "mandi", icon: Store, color: "#FF9800" },
   { role: "wholesaler", icon: Truck, color: "#2196F3" },
-  { role: "retailer", icon: ShoppingCart, color: "#9C27B0" },
   { role: "admin", icon: ShieldCheck, color: "#F44336" },
 ];
 

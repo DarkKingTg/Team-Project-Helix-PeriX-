@@ -53,15 +53,6 @@ const roleConfig = [
     bgGradient: "linear-gradient(135deg, #E3F2FD, #BBDEFB)",
   },
   {
-    role: "retailer" as UserRole,
-    icon: ShoppingCart,
-    label: "Retailer / Grocery",
-    description: "Sell to consumers, auto-markdown near-expiry stock & surplus trade",
-    color: "#9C27B0",
-    badge: "Retail Point",
-    bgGradient: "linear-gradient(135deg, #F3E5F5, #E1BEE7)",
-  },
-  {
     role: "admin" as UserRole,
     icon: ShieldCheck,
     label: "Admin / Superuser",
@@ -111,8 +102,6 @@ function getDashboardRouteForRole(role?: UserRole | string | null): string {
       return "/dashboard/inventory";
     case "wholesaler":
       return "/dashboard/distribution";
-    case "retailer":
-      return "/dashboard/pricing";
     case "admin":
       return "/dashboard";
     default:
@@ -158,8 +147,8 @@ export default function LoginPage() {
       setLoading(true);
       setError("");
       await signInWithEmail(email, password);
-      const targetRole = email.includes("farmer") ? "farmer" : email.includes("mandi") ? "mandi" : email.includes("wholesaler") ? "wholesaler" : email.includes("retail") ? "retailer" : email.includes("admin") ? "admin" : profile?.role || "farmer";
-      router.push(getDashboardRouteForRole(targetRole));
+      const targetRole = email.includes("farmer") ? "farmer" : email.includes("mandi") ? "mandi" : email.includes("wholesaler") ? "wholesaler" : email.includes("admin") ? "admin" : profile?.role || "farmer";
+      router.push(getDashboardRouteForRole(targetRole as UserRole));
     } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
@@ -313,7 +302,7 @@ export default function LoginPage() {
 
           {/* Supply Chain Mesh Badges */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", marginBottom: "36px" }}>
-            {["Farmer", "Mandi Agent", "Wholesaler", "Retailer", "Prophet & XGBoost AI"].map((item) => (
+            {["Farmer", "Mandi Agent", "Wholesaler", "Admin", "Prophet & XGBoost AI"].map((item) => (
               <span
                 key={item}
                 style={{
@@ -426,14 +415,6 @@ export default function LoginPage() {
                 style={{ justifyContent: "flex-start", gap: "6px", fontSize: "12px", padding: "8px 10px" }}
               >
                 <Truck size={15} color="#2196F3" /> Wholesaler
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("retailer")}
-                className="btn btn-secondary btn-sm"
-                style={{ justifyContent: "flex-start", gap: "6px", fontSize: "12px", padding: "8px 10px" }}
-              >
-                <ShoppingCart size={15} color="#9C27B0" /> Retailer (POS)
               </button>
             </div>
             <button
@@ -575,7 +556,6 @@ export default function LoginPage() {
                     { label: " Farmer", email: "farmer@perix.in", pass: "farmer123" },
                     { label: " Mandi", email: "mandi@perix.in", pass: "mandi123" },
                     { label: " Wholesaler", email: "wholesaler@perix.in", pass: "wholesaler123" },
-                    { label: " Retailer", email: "retailer@perix.in", pass: "retailer123" },
                     { label: " Admin", email: "admin@perix.in", pass: "admin123" },
                   ].map((acc) => (
                     <button

@@ -61,15 +61,7 @@ const roleNavConfigs: Record<UserRole, NavConfigItem[]> = {
     { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
     { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
-  retailer: [
-    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { id: "inventory", icon: Package, href: "/dashboard/inventory" },
-    { id: "marketplace", icon: Store, href: "/dashboard/marketplace" },
-    { id: "pricing", icon: BarChart3, href: "/dashboard/pricing" },
-    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
-    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
-    { id: "settings", icon: Settings, href: "/dashboard/settings" },
-  ],
+
   admin: [
     { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { id: "users", icon: Package, href: "/dashboard/users" },
@@ -84,7 +76,6 @@ const roleColors: Record<UserRole, string> = {
   farmer: "#4CAF50",
   mandi: "#FF9800",
   wholesaler: "#2196F3",
-  retailer: "#9C27B0",
   admin: "#F44336",
 };
 
@@ -594,7 +585,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       Switch Role View
                     </div>
-                    {(["farmer", "mandi", "wholesaler", "retailer", "admin"] as UserRole[]).map((r) => {
+                    {(["farmer", "mandi", "wholesaler", "admin"] as UserRole[]).map((r) => {
                       const isCurrent = role === r;
                       return (
                         <button

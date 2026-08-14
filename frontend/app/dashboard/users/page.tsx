@@ -111,10 +111,10 @@ export default function UsersManagementPage() {
         return <Store size={16} color="#FF9800" />;
       case "wholesaler":
         return <Truck size={16} color="#2196F3" />;
-      case "retailer":
-        return <ShoppingCart size={16} color="#9C27B0" />;
       case "admin":
         return <ShieldCheck size={16} color="#F44336" />;
+      default:
+        return <Users size={16} color="#9E9E9E" />;
     }
   };
 
@@ -155,7 +155,7 @@ export default function UsersManagementPage() {
         </div>
 
         <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-          {["all", "farmer", "mandi", "wholesaler", "retailer", "admin"].map((r) => (
+          {["all", "farmer", "mandi", "wholesaler", "admin"].map((r) => (
             <button
               key={r}
               onClick={() => setFilterRole(r)}
@@ -176,7 +176,7 @@ export default function UsersManagementPage() {
           </div>
           <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>No Participants Found</h3>
           <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto" }}>
-            As new farmers, mandis, wholesalers, and retailers register accounts, they will appear in this oversight registry.
+            As new farmers, mandis, and wholesalers register accounts, they will appear in this oversight registry.
           </p>
         </div>
       )}

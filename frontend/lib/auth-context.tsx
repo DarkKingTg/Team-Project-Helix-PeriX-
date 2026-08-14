@@ -13,7 +13,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 
-export type UserRole = "farmer" | "mandi" | "wholesaler" | "retailer" | "admin";
+export type UserRole = "farmer" | "mandi" | "wholesaler" | "admin";
 
 export interface UserProfile {
   uid: string;
@@ -83,15 +83,7 @@ const DEMO_PROFILES: Record<UserRole, UserProfile> = {
     language: "en",
     isDemo: true,
   },
-  retailer: {
-    uid: "demo-retailer-001",
-    email: "freshmart.retail@perix.in",
-    displayName: "FreshMart Organic Retail",
-    role: "retailer",
-    location: { state: "Tamil Nadu", district: "Chennai" },
-    language: "en",
-    isDemo: true,
-  },
+
   admin: {
     uid: "demo-admin-001",
     email: "admin@perix.in",
@@ -224,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (cleanEmail.includes("retail") || cleanEmail.includes("freshmart") || cleanEmail.includes("pos")) {
-      loginAsDemo("retailer");
+      loginAsDemo("wholesaler");
       return;
     }
     if (cleanEmail.includes("admin")) {

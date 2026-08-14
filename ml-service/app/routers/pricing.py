@@ -15,8 +15,11 @@ class PricePredictionRequest(BaseModel):
 class DynamicPricingRequest(BaseModel):
     commodity: str
     current_price: float
-    days_to_expiry: int
-    quantity: float
+    hours_to_expiry: Optional[float] = 24.0
+    days_to_expiry: Optional[float] = None
+    temperature_c: Optional[float] = 25.0
+    humidity_pct: Optional[float] = 65.0
+    quantity: Optional[float] = 100.0
 
 
 class PricePredictionResponse(BaseModel):
@@ -37,6 +40,10 @@ class DynamicPricingResponse(BaseModel):
     discount_percentage: float
     urgency: str
     reasoning: str
+    hours_to_expiry: Optional[float] = None
+    temperature_c: Optional[float] = None
+    effective_hours: Optional[float] = None
+    temp_decay_multiplier: Optional[float] = None
 
 
 # Base prices for Indian agricultural commodities (₹ per kg)
@@ -72,9 +79,7 @@ async def predict_price(request: PricePredictionRequest):
         result = predictor.predict(request.commodity, request.state)
         return PricePredictionResponse(**result)
     except Exception as e:
-        # Fallback
         base_price = BASE_PRICES.get(request.commodity, 30.0)
-        # Add some realistic variation
         change = random.uniform(-0.12, 0.18)
         predicted = base_price * (1 + change)
 
@@ -93,54 +98,31 @@ async def predict_price(request: PricePredictionRequest):
 @router.post("/dynamic", response_model=DynamicPricingResponse)
 async def dynamic_pricing(request: DynamicPricingRequest):
     """
-    Calculate optimal markdown price for near-expiry goods.
-    Must resolve in < 200ms as per TRD requirements.
+    Calculate optimal markdown price for near-expiry and temperature-stressed goods.
+    Uses trained GradientBoostingRegressor with Arrhenius kinetics (< 5ms response).
     """
-    try:
-        from app.models.dynamic_pricing import DynamicPricingEngine
+    from app.models.dynamic_pricing import DynamicPricingEngine
 
-        engine = DynamicPricingEngine()
-        result = engine.calculate(
-            request.commodity,
-            request.current_price,
-            request.days_to_expiry,
-            request.quantity,
-        )
-        return DynamicPricingResponse(**result)
-    except Exception:
-        # Fallback algorithm
-        days = request.days_to_expiry
-        price = request.current_price
-        qty = request.quantity
+    hours = request.hours_to_expiry
+    if hours is None and request.days_to_expiry is not None:
+        hours = request.days_to_expiry * 24.0
+    elif hours is None:
+        hours = 24.0
 
-        # Dynamic discount based on days to expiry and quantity
-        if days <= 1:
-            discount = min(70, 50 + qty / 100)
-            urgency = "critical"
-            reasoning = f"Item expires tomorrow. Aggressive markdown to clear {qty}kg stock immediately."
-        elif days <= 3:
-            discount = min(50, 30 + qty / 200)
-            urgency = "high"
-            reasoning = f"Only {days} days left. Significant discount recommended to accelerate sales."
-        elif days <= 7:
-            discount = min(30, 15 + qty / 500)
-            urgency = "medium"
-            reasoning = f"{days} days to expiry. Moderate discount to boost demand and prevent waste."
-        else:
-            discount = min(15, 5 + qty / 1000)
-            urgency = "low"
-            reasoning = f"Sufficient shelf life ({days} days). Minor promotion to optimize inventory flow."
+    temp_c = request.temperature_c if request.temperature_c is not None else 25.0
+    humidity = request.humidity_pct if request.humidity_pct is not None else 65.0
+    qty = request.quantity if request.quantity is not None else 100.0
 
-        recommended_price = round(price * (1 - discount / 100), 2)
-
-        return DynamicPricingResponse(
-            commodity=request.commodity,
-            original_price=price,
-            recommended_price=recommended_price,
-            discount_percentage=round(discount, 1),
-            urgency=urgency,
-            reasoning=reasoning,
-        )
+    engine = DynamicPricingEngine()
+    result = engine.calculate(
+        commodity=request.commodity,
+        current_price=request.current_price,
+        hours_to_expiry=hours,
+        temperature_c=temp_c,
+        humidity_pct=humidity,
+        quantity=qty,
+    )
+    return DynamicPricingResponse(**result)
 
 
 @router.get("/base-prices")

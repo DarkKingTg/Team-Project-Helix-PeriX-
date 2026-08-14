@@ -61,8 +61,10 @@ export class PredictionsService {
   async getDynamicPricing(
     commodity: string,
     currentPrice: number,
-    daysToExpiry: number,
-    quantity: number,
+    hoursToExpiry: number = 24,
+    quantity: number = 100,
+    temperatureC: number = 25,
+    humidityPct: number = 65,
   ) {
     try {
       const response = await fetch(
@@ -73,7 +75,9 @@ export class PredictionsService {
           body: JSON.stringify({
             commodity,
             current_price: currentPrice,
-            days_to_expiry: daysToExpiry,
+            hours_to_expiry: hoursToExpiry,
+            temperature_c: temperatureC,
+            humidity_pct: humidityPct,
             quantity,
           }),
         },
@@ -87,13 +91,18 @@ export class PredictionsService {
     } catch (error) {
       console.error('ML service error:', error);
       const discount = Math.min(
-        50,
-        Math.max(5, (1 - daysToExpiry / 14) * 40),
+        70,
+        Math.max(5, (1 - hoursToExpiry / 168) * 60),
       );
       return {
-        recommended_price: currentPrice * (1 - discount / 100),
-        discount_percentage: discount,
-        urgency: daysToExpiry <= 2 ? 'high' : daysToExpiry <= 5 ? 'medium' : 'low',
+        commodity,
+        original_price: currentPrice,
+        recommended_price: Number((currentPrice * (1 - discount / 100)).toFixed(2)),
+        discount_percentage: Number(discount.toFixed(1)),
+        urgency: hoursToExpiry <= 24 ? 'critical' : hoursToExpiry <= 48 ? 'high' : 'moderate',
+        reasoning: `Decay calculation based on ${hoursToExpiry}h shelf life at ${temperatureC}°C.`,
+        hours_to_expiry: hoursToExpiry,
+        temperature_c: temperatureC,
       };
     }
   }

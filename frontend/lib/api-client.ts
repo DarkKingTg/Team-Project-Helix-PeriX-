@@ -167,7 +167,14 @@ export const apiClient = {
       return null;
     },
 
-    async getDynamicPricing(commodity: string, currentPrice: number, daysToExpiry: number, quantity: number) {
+    async getDynamicPricing(
+      commodity: string,
+      currentPrice: number,
+      hoursToExpiry: number = 24,
+      quantity: number = 100,
+      temperatureC: number = 25,
+      humidityPct: number = 65
+    ) {
       try {
         const res = await fetch(`${getApiBaseUrl()}/predictions/dynamic-pricing`, {
           method: "POST",
@@ -175,7 +182,9 @@ export const apiClient = {
           body: JSON.stringify({
             commodity,
             currentPrice,
-            daysToExpiry,
+            hoursToExpiry,
+            temperatureC,
+            humidityPct,
             quantity,
           }),
         });
@@ -192,7 +201,9 @@ export const apiClient = {
           body: JSON.stringify({
             commodity,
             current_price: currentPrice,
-            days_to_expiry: daysToExpiry,
+            hours_to_expiry: hoursToExpiry,
+            temperature_c: temperatureC,
+            humidity_pct: humidityPct,
             quantity,
           }),
         });

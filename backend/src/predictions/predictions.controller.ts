@@ -32,15 +32,20 @@ export class PredictionsController {
     body: {
       commodity: string;
       currentPrice: number;
-      daysToExpiry: number;
-      quantity: number;
+      hoursToExpiry?: number;
+      daysToExpiry?: number;
+      temperatureC?: number;
+      humidityPct?: number;
+      quantity?: number;
     },
   ) {
     return this.predictionsService.getDynamicPricing(
       body.commodity,
       body.currentPrice,
-      body.daysToExpiry,
-      body.quantity,
+      body.hoursToExpiry || (body.daysToExpiry ? body.daysToExpiry * 24 : 24),
+      body.quantity || 100,
+      body.temperatureC !== undefined ? body.temperatureC : 25,
+      body.humidityPct !== undefined ? body.humidityPct : 65,
     );
   }
 

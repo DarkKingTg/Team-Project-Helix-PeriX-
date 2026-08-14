@@ -126,7 +126,7 @@ export default function AIPipelineDashboardPage() {
     setRetraining(true);
     const res = await apiClient.pipeline.triggerRetrain();
     setRetraining(false);
-    setRetrainMsg(`✅ Model Retraining Completed! Version updated to ${res.model_version}. Historical MAPE improved by 1.4% against Agmarknet records.`);
+    setRetrainMsg(`Model Retraining Completed. Version updated to ${res.model_version}. Historical MAPE improved by 1.4% against Agmarknet records.`);
     setTimeout(() => setRetrainMsg(null), 6000);
   };
 
@@ -251,9 +251,9 @@ export default function AIPipelineDashboardPage() {
               value={inputData.storage_type}
               onChange={(e) => setInputData({ ...inputData, storage_type: e.target.value })}
             >
-              <option value="cold_storage">❄️ Cold Storage (2-4°C)</option>
-              <option value="warehouse">🏢 Standard Warehouse</option>
-              <option value="open_field">☀️ Open Field / Ambient</option>
+              <option value="cold_storage">Cold Storage (2-4°C)</option>
+              <option value="warehouse">Standard Warehouse</option>
+              <option value="open_field">Open Field / Ambient</option>
             </select>
           </div>
 

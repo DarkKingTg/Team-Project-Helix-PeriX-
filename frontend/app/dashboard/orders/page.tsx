@@ -15,6 +15,7 @@ import {
   Sparkles,
   Package,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
 
 interface OrderTransfer {
   id: string;
@@ -32,6 +33,7 @@ interface OrderTransfer {
 
 export default function OrdersPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [orders, setOrders] = useState<OrderTransfer[]>([]);
   const [filter, setFilter] = useState<string>("all");
 
@@ -58,13 +60,13 @@ export default function OrdersPage() {
   const getStatusBadge = (status: OrderTransfer["escrowStatus"]) => {
     switch (status) {
       case "funds_locked":
-        return { label: "Escrow Locked", bg: "rgba(255,152,0,0.15)", text: "#E65100" };
+        return { label: "Funds in Escrow", bg: "rgba(255,152,0,0.18)", text: "#E65100" };
       case "in_transit":
-        return { label: "In Transit", bg: "rgba(33,150,243,0.15)", text: "#1565C0" };
+        return { label: "In Reefer Transit", bg: "rgba(33,150,243,0.18)", text: "#1565C0" };
       case "delivered":
-        return { label: "Quality Verified", bg: "rgba(156,39,176,0.15)", text: "#7B1FA2" };
+        return { label: "Delivered (Pending QC)", bg: "rgba(156,39,176,0.18)", text: "#7B1FA2" };
       case "completed":
-        return { label: "Settled and Released", bg: "rgba(76,175,80,0.15)", text: "#2E7D32" };
+        return { label: "Escrow Released", bg: "rgba(76,175,80,0.18)", text: "#2E7D32" };
     }
   };
 
@@ -87,12 +89,12 @@ export default function OrdersPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Escrow Orders and Rebalancing Dispatches
+              {t("orders.title", "Escrow Orders and Rebalancing Dispatches")}
             </h2>
             <span className="badge badge-success">Smart Escrow Protected</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Real-time tracking of inter-node produce transfers, reefer fleet dispatches, and automated payment release.
+            {t("orders.subtitle", "Real-time tracking of inter-node produce transfers, reefer fleet dispatches, and automated payment release.")}
           </p>
         </div>
       </div>

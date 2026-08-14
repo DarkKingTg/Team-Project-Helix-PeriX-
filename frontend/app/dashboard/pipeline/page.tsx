@@ -20,8 +20,15 @@ import {
   Database,
   Terminal,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
+
+const COMMODITIES = [
+  "Tomato", "Potato", "Onion", "Wheat", "Rice", "Banana",
+  "Mango", "Green Chilli", "Garlic", "Ginger", "Turmeric"
+];
 
 export default function AIPipelineDashboardPage() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [retraining, setRetraining] = useState(false);
   const [retrainMsg, setRetrainMsg] = useState<string | null>(null);
@@ -150,21 +157,20 @@ export default function AIPipelineDashboardPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Cpu size={26} color="var(--primary)" />
-            <h2 style={{ fontSize: "24px", fontWeight: "800", color: "var(--text-primary)" }}>
-              10-Layer AI Supply Chain Pipeline & Waste Risk Engine
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
+              {t("pipeline.title", "10-Layer Autonomous AI Supply Chain Engine")}
             </h2>
-            <span className="badge badge-success">Official Agmarknet + Prophet + XGBoost</span>
+            <span className="badge badge-success">Production v2.4.2</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Multi-Persona Ingestion → Predictive Intelligence → Waste Risk Audit → Preventive OR-Tools → AI Agent Execution → Retraining Feedback Loop
+            {t("pipeline.subtitle", "Real-time orchestration of IoT sensors, Arrhenius decay kinetics, XGBoost price forecasting, and OR-Tools distribution routing.")}
           </p>
         </div>
 
         <button className="btn btn-secondary" onClick={handleRetrain} disabled={retraining}>
           <RefreshCw size={16} className={retraining ? "animate-spin" : ""} />
-          {retraining ? "Retraining Models..." : "Trigger Model Retraining (Layer 10)"}
+          {retraining ? "Retraining Models..." : t("pipeline.retrainBtn", "Trigger Model Retraining")}
         </button>
       </div>
 
@@ -192,41 +198,38 @@ export default function AIPipelineDashboardPage() {
       {/* Top Section: Pipeline Input Simulator Card */}
       <div className="card" style={{ padding: "24px", marginBottom: "24px" }}>
         <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "16px" }}>
-          1. Supply Chain Persona Telemetry Ingestion (Layers 1 to 4)
+          Supply Chain Persona Telemetry Ingestion (Layers 1 to 4)
         </h3>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px", marginBottom: "20px" }}>
           <div>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>
-              Persona Role
+              {t("auth.selectRole", "Persona Role")}
             </label>
             <select
               className="input"
               value={inputData.persona_role}
               onChange={(e) => setInputData({ ...inputData, persona_role: e.target.value })}
             >
-              <option value="farmer">🌾 Farmer</option>
-              <option value="mandi">🏪 Mandi Agent</option>
-              <option value="wholesaler">🚚 Wholesaler</option>
-              <option value="retailer">🛒 Retailer</option>
+              <option value="farmer">{t("roles.farmer", "Farmer")}</option>
+              <option value="mandi">{t("roles.mandi", "Mandi Agent")}</option>
+              <option value="wholesaler">{t("roles.wholesaler", "Wholesaler")}</option>
+              <option value="retailer">{t("roles.retailer", "Retailer")}</option>
             </select>
           </div>
 
           <div>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>
-              Commodity
+              {t("inventory.commodity", "Commodity")}
             </label>
             <select
               className="input"
               value={inputData.commodity}
               onChange={(e) => setInputData({ ...inputData, commodity: e.target.value })}
             >
-              <option value="Tomato">Tomato</option>
-              <option value="Potato">Potato</option>
-              <option value="Onion">Onion</option>
-              <option value="Green Chilli">Green Chilli</option>
-              <option value="Banana">Banana</option>
-              <option value="Wheat">Wheat</option>
+              {COMMODITIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
 
@@ -336,7 +339,7 @@ export default function AIPipelineDashboardPage() {
 
           <div style={{ padding: "12px 14px", borderRadius: "8px", background: "rgba(46,125,50,0.08)", border: "1px solid rgba(46,125,50,0.2)" }}>
             <p style={{ fontSize: "12px", color: "var(--primary-dark)", fontWeight: "600" }}>
-              💡 {pipelineOutput.recommended_action}
+             {pipelineOutput.recommended_action}
             </p>
           </div>
         </div>
@@ -346,7 +349,7 @@ export default function AIPipelineDashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
             <Cpu size={20} color="#2196F3" />
             <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Layers 7 & 8: Preventive Optimization & AI Agent
+            Preventive Optimization & AI Agent
             </h3>
           </div>
 
@@ -389,7 +392,7 @@ export default function AIPipelineDashboardPage() {
       {/* Layer 9 & 10: Dispatched Operational Triggers & Monitoring Telemetry */}
       <div className="card" style={{ padding: "24px" }}>
         <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "16px" }}>
-          Layers 9 & 10: Action Dispatch & Retraining Loop Telemetry
+          Action Dispatch & Retraining Loop Telemetry
         </h3>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>

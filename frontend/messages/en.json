@@ -1,16 +1,23 @@
 {
   "app": {
     "name": "PeriX",
-    "tagline": "From Farm to Fork"
+    "tagline": "From Farm to Fork - Intelligent Logistics"
   },
   "nav": {
     "dashboard": "Dashboard",
-    "marketplace": "Marketplace",
+    "crops": "My Crops",
+    "market": "Market Prices",
+    "aiAdvisor": "AI Agent Predictions",
+    "pipeline": "AI Agent Predictions",
+    "orders": "Orders & Escrow",
     "inventory": "Inventory",
-    "orders": "Orders",
+    "marketplace": "Surplus Market",
+    "distribution": "Logistics & Fleet",
+    "pricing": "Dynamic Pricing",
     "analytics": "Analytics",
+    "users": "Participant Directory",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Sign Out"
   },
   "auth": {
     "login": "Sign In",
@@ -26,14 +33,16 @@
   },
   "roles": {
     "farmer": "Farmer",
-    "farmerDesc": "Grow and supply agricultural produce",
-    "mandi": "Commission Agent (Mandi)",
-    "mandiDesc": "Connect farmers with wholesalers",
+    "farmerDesc": "Crop inputs, yields & farm-gate prices",
+    "mandi": "Mandi Agent",
+    "mandiDesc": "APMC intake, distribution routes & commissions",
     "wholesaler": "Wholesaler",
-    "wholesalerDesc": "Distribute goods to retailers",
+    "wholesalerDesc": "Bulk hub inventory, logistics & reefer cold-chains",
     "retailer": "Retailer",
-    "retailerDesc": "Sell directly to consumers",
-    "admin": "Administrator"
+    "retailerDesc": "Store POS, dynamic markdowns & surplus trades",
+    "admin": "System Administrator",
+    "adminDesc": "Global network oversight & cross-tier access",
+    "switchPersona": "Switch Role View"
   },
   "dashboard": {
     "welcome": "Welcome back",
@@ -49,50 +58,118 @@
     "tips": "Recommendations"
   },
   "farmer": {
-    "myCrops": "My Crops",
-    "addCrop": "Add Crop",
+    "myCrops": "Farmer Crop Registry",
+    "title": "Farmer Crop Registry and Harvest Log",
+    "subtitle": "Log expected crop yields, location coordinates and trigger automated Mandi price matching",
+    "addCrop": "Register New Crop",
     "cropName": "Crop Name",
-    "quantity": "Quantity (kg)",
+    "quantity": "Expected Quantity (kg)",
     "quality": "Quality Grade",
     "harvestDate": "Expected Harvest Date",
     "location": "Farm Location",
     "state": "State",
     "district": "District",
-    "landArea": "Land Area (acres)",
-    "storage": "Storage Type",
+    "landArea": "Land Area (Acres)",
+    "storage": "Post-Harvest Storage Facility",
     "openField": "Open Field",
     "coldStorage": "Cold Storage",
-    "warehouse": "Warehouse",
+    "warehouse": "Ventilated Warehouse",
     "marketPrices": "Current Market Prices",
-    "bestTimeToSell": "Best Time to Sell",
-    "nearestMandi": "Nearest Mandi"
+    "totalHarvest": "Total Harvest Volume",
+    "activeArea": "Active Farm Area",
+    "yieldConfidence": "AI Yield Confidence",
+    "emptyTitle": "No Crops Registered Yet",
+    "emptyDesc": "Your crop mesh is ready. Click below to register your standing crop batches and track harvest windows."
   },
-  "mandi": {
-    "currentStock": "Current Stock",
-    "addStock": "Add Stock",
+  "inventory": {
+    "mandiTitle": "Mandi Aggregation and Shelf-Life Tracker",
+    "mandiSubtitle": "Batch intake logger, Arrhenius respiration decay curves, and APMC commission spreads.",
+    "wholesalerTitle": "Wholesale Hub and Reefer Logistics",
+    "wholesalerSubtitle": "Cold-chain telemetry, multi-drop load dispatching, and margin optimization.",
+    "logMandiBtn": "Log Mandi Batch",
+    "logReeferBtn": "Log Reefer Consignment",
     "commodity": "Commodity",
-    "buyPrice": "Buy Price (₹/kg)",
-    "sellPrice": "Sell Price (₹/kg)",
-    "connectedWholesalers": "Connected Wholesalers",
-    "distributionRoutes": "Distribution Routes",
-    "demandForProducts": "Demand for Products"
+    "quantity": "Quantity (kg)",
+    "quality": "Quality Grade",
+    "procurementRate": "Procurement Rate (Rs/kg)",
+    "sellingRate": "Target Selling Rate (Rs/kg)",
+    "shelfLife": "Estimated Shelf Life (Days)",
+    "emptyTitle": "No Inventory Records Found",
+    "emptyDesc": "Your inventory mesh is ready. Click below to log your first consignment and start tracking shelf life."
   },
-  "wholesaler": {
-    "inventory": "Inventory",
-    "addInventory": "Add Inventory",
-    "storageCapacity": "Storage Capacity",
-    "coldChain": "Cold Chain Status",
-    "demandRequirements": "Demand Requirements",
-    "distributionNetwork": "Distribution Network",
-    "active": "Active",
-    "inactive": "Inactive"
+  "pricing": {
+    "title": "Retail Dynamic Markdown and POS Engine",
+    "subtitle": "Trained Arrhenius respiration decay kinetics, thermal stress sensitivity, and real-time POS barcode syncing.",
+    "calculatorTitle": "Multi-Variable Thermodynamic Markdown Model (Trained ML)",
+    "pushPos": "Push Markdowns to POS",
+    "originalPrice": "Original Tag Rate (Rs/kg)",
+    "shelfLifeHours": "Shelf-Life Window (Hours)",
+    "temperature": "Storage Temperature (°C)",
+    "stockVolume": "Stock Volume (kg / units)",
+    "aiPrice": "AI Predicted Clearance Price",
+    "emptyTitle": "No Active Markdown Rules",
+    "emptyDesc": "Use the thermodynamic calculator above to evaluate near-expiry produce and generate automated discounted barcodes."
+  },
+  "pipeline": {
+    "title": "10-Layer Autonomous AI Supply Chain Engine",
+    "subtitle": "Real-time orchestration of IoT sensors, Arrhenius decay kinetics, XGBoost price forecasting, and OR-Tools distribution routing.",
+    "evaluateBtn": "Evaluate 10-Layer AI Pipeline",
+    "retrainBtn": "Trigger Model Retraining",
+    "riskLevel": "Risk Level",
+    "wastePct": "Expected Waste %",
+    "shelfLife": "Remaining Shelf Life",
+    "recommendedAction": "Recommended System Action"
+  },
+  "orders": {
+    "title": "Escrow Orders and Rebalancing Dispatches",
+    "subtitle": "Real-time tracking of inter-node produce transfers, reefer fleet dispatches, and automated payment release.",
+    "emptyTitle": "No Active Orders Found",
+    "emptyDesc": "Produce purchase orders and surplus marketplace contracts will appear here with live escrow tracking."
+  },
+  "marketplace": {
+    "title": "Anonymized B2B Surplus Rebalancing Mesh",
+    "subtitle": "Offload over-ordered stock or buy discounted wholesale produce without exposing commercial identity to competitors.",
+    "listBtn": "List Anonymous Surplus",
+    "available": "Available Surplus Listings",
+    "inEscrow": "In-Escrow Rebalancing",
+    "emptyTitle": "No Active Surplus Listings",
+    "emptyDesc": "All surplus stock across the mesh has been cleared. Click below to list excess produce."
+  },
+  "distribution": {
+    "title": "Wholesale Logistics and Multi-Stop Dispatch",
+    "subtitle": "Multi-echelon route optimization, cold-chain IoT telemetry, and automated drop sequence planning.",
+    "scheduleBtn": "Schedule Route",
+    "optimizeBtn": "Run OR-Tools Optimizer",
+    "emptyTitle": "No Delivery Routes Scheduled",
+    "emptyDesc": "Create your first reefer route to optimize waypoint sequences, reduce fuel burn, and monitor cold-chain temperatures."
+  },
+  "market": {
+    "title": "Live Mandi Market Intelligence",
+    "subtitle": "Real-time wholesale prices, arrival volumes, and 7-day price trajectory forecasts across India.",
+    "syncGov": "Live Sync Agmarknet"
+  },
+  "analytics": {
+    "title": "Dual-KPI Waste & Profitability Analytics",
+    "subtitle": "Tracking cumulative landfill waste prevented and dynamic revenue recovery across the entire PeriX decentralized mesh."
+  },
+  "users": {
+    "title": "Network Participant and Node Oversight",
+    "subtitle": "Monitor real node registrations, active commodity tonnage, and cross-tier access permissions."
+  },
+  "settings": {
+    "title": "Preferences and Network Settings",
+    "subtitle": "Customize your supply chain role viewpoint, regional language, and business coordinates.",
+    "language": "Regional Display Language",
+    "theme": "Display Theme",
+    "profile": "Profile Information",
+    "saveProfile": "Save Preferences"
   },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "search": "Search",
+    "search": "Search...",
     "filter": "Filter",
     "loading": "Loading...",
     "noData": "No data available",
@@ -108,6 +185,20 @@
     "pending": "Pending",
     "confirmed": "Confirmed",
     "inTransit": "In Transit",
-    "delivered": "Delivered"
+    "delivered": "Delivered",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "collapse": "Collapse",
+    "copilot": "PeriAI Copilot",
+    "welcome": "Welcome back",
+    "user": "User",
+    "supplyChainOverview": "Here is what is happening in your supply chain today.",
+    "demandForecast": "Demand Forecast",
+    "demandSubtitle": "AI-predicted commodity demand trends",
+    "priceTrends": "Price Trends (Rs/kg)",
+    "priceSubtitle": "Actual vs AI-predicted prices",
+    "recentActivity": "Recent Activity",
+    "aiInsights": "AI Insights",
+    "stockDistribution": "Stock Distribution"
   }
 }

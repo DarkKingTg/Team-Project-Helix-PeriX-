@@ -33,6 +33,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { AIAdvisorWidget } from "@/components/ai-advisor-widget";
+import { useI18n } from "@/lib/i18n-context";
 
 interface Crop {
   id: string;
@@ -64,6 +65,7 @@ const storageTypes = [
 
 export default function CropsPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [crops, setCrops] = useState<Crop[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -153,8 +155,7 @@ export default function CropsPage() {
     e.preventDefault();
     setLoading(true);
 
-    const cropData: Crop = {
-      id: editingId || `crop-${Date.now()}`,
+    const cropData = {
       name: form.name,
       quantity: Number(form.quantity),
       qualityGrade: form.qualityGrade,
@@ -163,20 +164,20 @@ export default function CropsPage() {
       district: form.district,
       landArea: Number(form.landArea),
       storageType: form.storageType,
-      status: "available",
+      status: "Standing Crop",
     };
 
-    let updatedList: Crop[];
+    // 1. Optimistic Local Update
+    let updatedList: Crop[] = [];
     if (editingId) {
-      updatedList = crops.map((c) => (c.id === editingId ? cropData : c));
+      updatedList = crops.map((c) => (c.id === editingId ? { ...c, ...cropData, id: c.id } as Crop : c));
     } else {
-      updatedList = [cropData, ...crops];
+      const newCrop: Crop = { id: `crop-${Date.now()}`, ...cropData };
+      updatedList = [newCrop, ...crops];
     }
-
-    // 1. Immediately update React state
     setCrops(updatedList);
 
-    // 2. Immediately save to LocalStorage
+    // 2. Save to LocalStorage immediately
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updatedList));
@@ -187,7 +188,7 @@ export default function CropsPage() {
 
     // 3. Call Backend API
     try {
-      await apiClient.crops.createCrop({ ...cropData, farmerId: user?.uid || "demo-farmer" });
+      await apiClient.crops.createCrop({ ...cropData, id: editingId || `crop-${Date.now()}`, farmerId: user?.uid || "demo-farmer" });
     } catch (err) {
       console.warn("Backend crop create error:", err);
     }
@@ -256,12 +257,12 @@ export default function CropsPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Farmer Crop Registry and Harvest Log
+              {t("farmer.title", "Farmer Crop Registry and Harvest Log")}
             </h2>
             <span className="badge badge-success">Direct Farm Gate</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Log expected crop yields, location coordinates and trigger automated Mandi price matching
+            {t("farmer.subtitle", "Log expected crop yields, location coordinates and trigger automated Mandi price matching")}
           </p>
         </div>
         <button
@@ -272,7 +273,7 @@ export default function CropsPage() {
           }}
         >
           {showForm ? <X size={18} /> : <Plus size={18} />}
-          {showForm ? "Cancel" : "Register New Crop"}
+          {showForm ? t("common.cancel", "Cancel") : t("farmer.addCrop", "Register New Crop")}
         </button>
       </div>
 
@@ -282,15 +283,15 @@ export default function CropsPage() {
       {/* Summary KPI */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "24px" }}>
         <div className="card" style={{ padding: "18px 20px" }}>
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Total Harvest Volume</p>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{t("farmer.totalHarvest", "Total Harvest Volume")}</p>
           <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--primary)" }}>{totalQuantity.toLocaleString()} kg</h3>
         </div>
         <div className="card" style={{ padding: "18px 20px" }}>
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Active Farm Area</p>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{t("farmer.activeArea", "Active Farm Area")}</p>
           <h3 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)" }}>{totalArea.toFixed(1)} Acres</h3>
         </div>
         <div className="card" style={{ padding: "18px 20px" }}>
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>AI Yield Confidence</p>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{t("farmer.yieldConfidence", "AI Yield Confidence")}</p>
           <h3 style={{ fontSize: "22px", fontWeight: "700", color: "#2196F3" }}>94.2% Optimal</h3>
         </div>
       </div>

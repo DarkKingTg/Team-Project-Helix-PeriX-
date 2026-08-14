@@ -90,6 +90,9 @@ export const apiClient = {
         return { id: `local-mandi-${Date.now()}`, ...data };
       }
     },
+    async createMandiInventory(data: Record<string, unknown>, token?: string) {
+      return this.addMandiInventory(data, token);
+    },
     async getWholesalerInventory(token?: string) {
       try {
         const res = await fetch(`${getApiBaseUrl()}/inventory/wholesaler`, {
@@ -115,6 +118,9 @@ export const apiClient = {
         console.warn("Backend addWholesalerInventory unavailable:", err);
         return { id: `local-ws-${Date.now()}`, ...data };
       }
+    },
+    async createWholesalerInventory(data: Record<string, unknown>, token?: string) {
+      return this.addWholesalerInventory(data, token);
     },
     async deleteMandiInventory(id: string, token?: string) {
       try {

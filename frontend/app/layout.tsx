@@ -3,8 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-provider";
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { I18nProvider } from "@/lib/i18n-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,17 +26,15 @@ export const metadata: Metadata = {
   ],
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const messages = await getMessages();
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning data-scroll-behavior="smooth">
       <body className={`${inter.className} min-h-full flex flex-col`} style={{ fontFamily: "var(--font-inter), Inter, sans-serif" }}>
-        <NextIntlClientProvider messages={messages}>
+        <I18nProvider>
           <ThemeProvider>
             <AuthProvider>{children}</AuthProvider>
           </ThemeProvider>
-        </NextIntlClientProvider>
+        </I18nProvider>
       </body>
     </html>
   );

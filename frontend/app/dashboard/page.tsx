@@ -1,9 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useI18n } from "@/lib/i18n-context";
 import {
   TrendingUp,
   TrendingDown,
@@ -28,10 +26,8 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
 
-// Sample data for charts (will be replaced with real Firestore data)
 const demandData = [
   { month: "Jan", tomato: 4200, potato: 3800, onion: 3100, wheat: 5200 },
   { month: "Feb", tomato: 3800, potato: 4100, onion: 2900, wheat: 4800 },
@@ -100,32 +96,32 @@ interface KPIData {
 
 const roleKPIs: Record<string, KPIData[]> = {
   farmer: [
-    { label: "Total Revenue", value: "₹2,45,800", trend: 12.5, trendLabel: "vs last month", icon: IndianRupee, color: "#4CAF50" },
+    { label: "Total Revenue", value: "Rs 2,45,800", trend: 12.5, trendLabel: "vs last month", icon: IndianRupee, color: "#4CAF50" },
     { label: "Active Crops", value: "8", trend: 2, trendLabel: "new this month", icon: Leaf, color: "#66BB6A" },
     { label: "Orders Pending", value: "3", trend: -1, trendLabel: "vs last week", icon: ShoppingCart, color: "#FF9800" },
     { label: "Waste Saved", value: "120 kg", trend: 25, trendLabel: "reduction", icon: Package, color: "#2196F3" },
   ],
   mandi: [
-    { label: "Total Turnover", value: "₹12,80,000", trend: 8.3, trendLabel: "vs last month", icon: IndianRupee, color: "#FF9800" },
+    { label: "Total Turnover", value: "Rs 12,80,000", trend: 8.3, trendLabel: "vs last month", icon: IndianRupee, color: "#FF9800" },
     { label: "Active Inventory", value: "2,450 kg", trend: 15, trendLabel: "increase", icon: Package, color: "#4CAF50" },
     { label: "Pending Transfers", value: "7", trend: -3, trendLabel: "vs last week", icon: ShoppingCart, color: "#2196F3" },
     { label: "Spoilage Risk", value: "3 items", trend: -40, trendLabel: "reduction", icon: AlertTriangle, color: "#F44336" },
   ],
   wholesaler: [
-    { label: "Total Revenue", value: "₹8,92,000", trend: 6.7, trendLabel: "vs last month", icon: IndianRupee, color: "#2196F3" },
+    { label: "Total Revenue", value: "Rs 8,92,000", trend: 6.7, trendLabel: "vs last month", icon: IndianRupee, color: "#2196F3" },
     { label: "Stock Level", value: "5,200 kg", trend: -8, trendLabel: "vs capacity", icon: Package, color: "#4CAF50" },
     { label: "Active Orders", value: "12", trend: 4, trendLabel: "new this week", icon: ShoppingCart, color: "#FF9800" },
     { label: "Cold Chain", value: "98.5%", trend: 0.5, trendLabel: "uptime", icon: Leaf, color: "#9C27B0" },
   ],
   retailer: [
-    { label: "Daily Sales", value: "₹45,200", trend: 15.2, trendLabel: "vs yesterday", icon: IndianRupee, color: "#9C27B0" },
+    { label: "Daily Sales", value: "Rs 45,200", trend: 15.2, trendLabel: "vs yesterday", icon: IndianRupee, color: "#9C27B0" },
     { label: "Items in Stock", value: "142", trend: -5, trendLabel: "low stock alerts", icon: Package, color: "#4CAF50" },
     { label: "Dynamic Pricing", value: "8 active", trend: 3, trendLabel: "markdowns", icon: TrendingDown, color: "#FF9800" },
     { label: "Waste Reduced", value: "32%", trend: 12, trendLabel: "improvement", icon: Leaf, color: "#2196F3" },
   ],
   admin: [
     { label: "Total Users", value: "1,247", trend: 23, trendLabel: "new this month", icon: Package, color: "#F44336" },
-    { label: "Network Volume", value: "₹45.2L", trend: 18, trendLabel: "growth", icon: IndianRupee, color: "#4CAF50" },
+    { label: "Network Volume", value: "Rs 45.2L", trend: 18, trendLabel: "growth", icon: IndianRupee, color: "#4CAF50" },
     { label: "Active Transfers", value: "89", trend: 12, trendLabel: "this week", icon: ShoppingCart, color: "#2196F3" },
     { label: "System Health", value: "99.8%", trend: 0.1, trendLabel: "uptime", icon: Sparkles, color: "#FF9800" },
   ],
@@ -133,6 +129,7 @@ const roleKPIs: Record<string, KPIData[]> = {
 
 export default function DashboardPage() {
   const { profile } = useAuth();
+  const { t } = useI18n();
   const role = profile?.role || "farmer";
   const kpis = roleKPIs[role] || roleKPIs.farmer;
 
@@ -141,10 +138,10 @@ export default function DashboardPage() {
       {/* Welcome section */}
       <div style={{ marginBottom: "28px" }}>
         <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
-          Welcome back, {profile?.displayName || "User"} 👋
+          {t("common.welcome", "Welcome back")}, {profile?.displayName || "User"}
         </h2>
         <p style={{ fontSize: "15px", color: "var(--text-secondary)" }}>
-          Here&apos;s what&apos;s happening in your supply chain today
+          {t("common.supplyChainOverview", "Here is what is happening in your supply chain today.")}
         </p>
       </div>
 
@@ -189,10 +186,10 @@ export default function DashboardPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
-                Demand Forecast
+                {t("common.demandForecast", "Demand Forecast")}
               </h3>
               <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>
-                AI-predicted commodity demand trends
+                {t("common.demandSubtitle", "AI-predicted commodity demand trends")}
               </p>
             </div>
             <span className="badge badge-success">
@@ -239,10 +236,10 @@ export default function DashboardPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <div>
               <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
-                Price Trends (₹/kg)
+                {t("common.priceTrends", "Price Trends (Rs/kg)")}
               </h3>
               <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>
-                Actual vs AI-predicted prices
+                {t("common.priceSubtitle", "Actual vs AI-predicted prices")}
               </p>
             </div>
           </div>
@@ -271,7 +268,7 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         <div className="card" style={{ padding: "24px" }}>
           <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>
-            Recent Activity
+            {t("common.recentActivity", "Recent Activity")}
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {recentActivity.map((activity) => (
@@ -333,7 +330,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
             <Sparkles size={20} color="var(--primary)" />
             <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
-              AI Insights
+              {t("common.aiInsights", "AI Insights")}
             </h3>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -370,7 +367,7 @@ export default function DashboardPage() {
         {/* Inventory Distribution */}
         <div className="card" style={{ padding: "24px" }}>
           <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "16px" }}>
-            Stock Distribution
+            {t("common.stockDistribution", "Stock Distribution")}
           </h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>

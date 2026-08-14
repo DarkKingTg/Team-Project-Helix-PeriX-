@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth, UserRole } from "@/lib/auth-context";
+import { useI18n, Locale } from "@/lib/i18n-context";
 import {
   Leaf,
   LayoutDashboard,
@@ -22,59 +23,60 @@ import {
   Loader2,
   Cpu,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { AICopilotModal } from "@/components/ai-copilot-modal";
 
-interface NavItem {
-  label: string;
+interface NavConfigItem {
+  id: string;
   icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
   href: string;
 }
 
-const roleNavItems: Record<UserRole, NavItem[]> = {
+const roleNavConfigs: Record<UserRole, NavConfigItem[]> = {
   farmer: [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "My Crops", icon: Package, href: "/dashboard/crops" },
-    { label: "Market Prices", icon: BarChart3, href: "/dashboard/market" },
-    { label: "AI Pipeline", icon: Cpu, href: "/dashboard/pipeline" },
-    { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
-    { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { id: "crops", icon: Package, href: "/dashboard/crops" },
+    { id: "market", icon: BarChart3, href: "/dashboard/market" },
+    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
+    { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
   mandi: [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "Inventory", icon: Package, href: "/dashboard/inventory" },
-    { label: "Marketplace", icon: Store, href: "/dashboard/marketplace" },
-    { label: "AI Pipeline", icon: Cpu, href: "/dashboard/pipeline" },
-    { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
-    { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-    { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { id: "inventory", icon: Package, href: "/dashboard/inventory" },
+    { id: "marketplace", icon: Store, href: "/dashboard/marketplace" },
+    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
+    { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+    { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
   wholesaler: [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "Inventory", icon: Package, href: "/dashboard/inventory" },
-    { label: "Distribution", icon: Store, href: "/dashboard/distribution" },
-    { label: "AI Pipeline", icon: Cpu, href: "/dashboard/pipeline" },
-    { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
-    { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-    { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { id: "inventory", icon: Package, href: "/dashboard/inventory" },
+    { id: "distribution", icon: Store, href: "/dashboard/distribution" },
+    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
+    { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+    { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
   retailer: [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "Inventory", icon: Package, href: "/dashboard/inventory" },
-    { label: "Marketplace", icon: Store, href: "/dashboard/marketplace" },
-    { label: "Dynamic Pricing", icon: BarChart3, href: "/dashboard/pricing" },
-    { label: "AI Pipeline", icon: Cpu, href: "/dashboard/pipeline" },
-    { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
-    { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { id: "inventory", icon: Package, href: "/dashboard/inventory" },
+    { id: "marketplace", icon: Store, href: "/dashboard/marketplace" },
+    { id: "pricing", icon: BarChart3, href: "/dashboard/pricing" },
+    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
+    { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
   admin: [
-    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { label: "Users", icon: Package, href: "/dashboard/users" },
-    { label: "All Inventory", icon: Store, href: "/dashboard/inventory" },
-    { label: "AI Pipeline", icon: Cpu, href: "/dashboard/pipeline" },
-    { label: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
-    { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { id: "users", icon: Package, href: "/dashboard/users" },
+    { id: "inventory", icon: Store, href: "/dashboard/inventory" },
+    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+    { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
 };
 
@@ -86,15 +88,7 @@ const roleColors: Record<UserRole, string> = {
   admin: "#F44336",
 };
 
-const roleLabels: Record<UserRole, string> = {
-  farmer: "Farmer",
-  mandi: "Mandi Agent",
-  wholesaler: "Wholesaler",
-  retailer: "Retailer",
-  admin: "Admin",
-};
-
-const DASHBOARD_LANGUAGES = [
+const DASHBOARD_LANGUAGES: { code: Locale; name: string; native: string }[] = [
   { code: "en", name: "English", native: "English" },
   { code: "hi", name: "Hindi", native: "हिन्दी" },
   { code: "ta", name: "Tamil", native: "தமிழ்" },
@@ -107,7 +101,8 @@ const DASHBOARD_LANGUAGES = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, switchRole } = useAuth();
+  const { locale, setLocale, t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
@@ -115,21 +110,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState("en");
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const match = document.cookie.match(/NEXT_LOCALE=([^;]+)/);
-    if (match && match[1]) {
-      setCurrentLang(match[1]);
-    }
   }, []);
 
-  const handleSelectLanguage = (code: string) => {
-    setCurrentLang(code);
-    document.cookie = `NEXT_LOCALE=${code}; path=/; max-age=31536000; SameSite=Lax`;
+  const handleSelectLanguage = (code: Locale) => {
+    setLocale(code);
     setLangDropdownOpen(false);
-    router.refresh();
   };
 
   useEffect(() => {
@@ -155,13 +145,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const role = profile?.role || "farmer";
-  const navItems = roleNavItems[role];
-  const color = roleColors[role];
+  const navConfigs = roleNavConfigs[role] || roleNavConfigs.farmer;
+  const color = roleColors[role] || "#4CAF50";
+
+  const getNavLabel = (id: string) => {
+    switch (id) {
+      case "dashboard": return t("nav.dashboard", "Dashboard");
+      case "crops": return t("nav.crops", "My Crops");
+      case "market": return t("nav.market", "Market Prices");
+      case "aiAdvisor": return t("nav.aiAdvisor", "AI Agent Predictions");
+      case "pipeline": return t("nav.aiAdvisor", "AI Agent Predictions");
+      case "orders": return t("nav.orders", "Orders");
+      case "inventory": return t("nav.inventory", "Inventory");
+      case "marketplace": return t("nav.marketplace", "Marketplace");
+      case "distribution": return t("nav.distribution", "Distribution");
+      case "pricing": return t("nav.pricing", "Dynamic Pricing");
+      case "analytics": return t("nav.analytics", "Analytics");
+      case "users": return t("nav.users", "Users");
+      case "settings": return t("nav.settings", "Settings");
+      default: return id;
+    }
+  };
+
+  const getRoleLabel = (r: UserRole) => {
+    return t(`roles.${r}`, r.toUpperCase());
+  };
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
   };
+
+  const currentNav = navConfigs.find((i) => i.href === pathname);
+  const currentTitle = currentNav ? getNavLabel(currentNav.id) : t("nav.dashboard", "Dashboard");
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--background)" }}>
@@ -246,16 +262,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             />
             {!collapsed && (
-              <span style={{ fontSize: "12px", fontWeight: "600", color }}>{roleLabels[role]}</span>
+              <span style={{ fontSize: "12px", fontWeight: "600", color }}>{getRoleLabel(role)}</span>
             )}
           </div>
         </div>
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: "8px", overflow: "auto" }}>
-          {navItems.map((item) => {
+          {navConfigs.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
+            const label = getNavLabel(item.id);
             return (
               <button
                 key={item.href}
@@ -286,9 +303,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.background = "transparent";
                 }}
+                title={collapsed ? label : undefined}
               >
                 <Icon size={20} />
-                {!collapsed && <span>{item.label}</span>}
+                {!collapsed && <span>{label}</span>}
               </button>
             );
           })}
@@ -325,7 +343,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-              {!collapsed && <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>}
+              {!collapsed && <span>{theme === "dark" ? t("common.lightMode", "Light Mode") : t("common.darkMode", "Dark Mode")}</span>}
             </button>
           )}
 
@@ -349,7 +367,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-            {!collapsed && <span>Collapse</span>}
+            {!collapsed && <span>{t("common.collapse", "Collapse")}</span>}
           </button>
 
           {/* Sign out */}
@@ -371,7 +389,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             <LogOut size={20} />
-            {!collapsed && <span>Sign Out</span>}
+            {!collapsed && <span>{t("nav.logout", "Sign Out")}</span>}
           </button>
         </div>
       </aside>
@@ -424,7 +442,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 color: "var(--text-primary)",
               }}
             >
-              {navItems.find((i) => i.href === pathname)?.label || "Dashboard"}
+              {currentTitle}
             </h1>
           </div>
 
@@ -446,7 +464,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <Globe size={18} />
                 <span style={{ fontSize: "12px", fontWeight: "600" }} className="hidden sm:inline">
-                  {DASHBOARD_LANGUAGES.find((l) => l.code === currentLang)?.native || "English"}
+                  {DASHBOARD_LANGUAGES.find((l) => l.code === locale)?.native || "English"}
                 </span>
               </button>
 
@@ -486,7 +504,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       Regional Languages
                     </div>
                     {DASHBOARD_LANGUAGES.map((l) => {
-                      const isSelected = currentLang === l.code;
+                      const isSelected = locale === l.code;
                       return (
                         <button
                           key={l.code}
@@ -518,7 +536,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div>{l.native}</div>
                             <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>{l.name}</div>
                           </div>
-                          {isSelected && <CheckCircle2 size={14} color="var(--primary)" />}
+                          {isSelected && <CheckCircle2 size={16} color="var(--primary)" />}
                         </button>
                       );
                     })}
@@ -527,53 +545,119 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
 
-            {/* User avatar */}
-            <div
+            {/* Persona switcher dropdown */}
+            <div style={{ position: "relative" }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                }}
+                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+              >
+                <span>{t("roles.switchPersona", "Role")}: {getRoleLabel(role)}</span>
+              </button>
+
+              {roleDropdownOpen && (
+                <>
+                  <div
+                    style={{ position: "fixed", inset: 0, zIndex: 60 }}
+                    onClick={() => setRoleDropdownOpen(false)}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "calc(100% + 8px)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "12px",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+                      zIndex: 70,
+                      width: "220px",
+                      padding: "6px",
+                    }}
+                    className="animate-fade-in"
+                  >
+                    <div
+                      style={{
+                        padding: "6px 10px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        color: "var(--text-secondary)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                      }}
+                    >
+                      Switch Role View
+                    </div>
+                    {(["farmer", "mandi", "wholesaler", "retailer", "admin"] as UserRole[]).map((r) => {
+                      const isCurrent = role === r;
+                      return (
+                        <button
+                          key={r}
+                          onClick={() => {
+                            switchRole(r);
+                            setRoleDropdownOpen(false);
+                          }}
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "8px 10px",
+                            borderRadius: "8px",
+                            border: "none",
+                            background: isCurrent ? `${roleColors[r]}15` : "transparent",
+                            color: isCurrent ? roleColors[r] : "var(--text-primary)",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            fontSize: "13px",
+                            fontWeight: isCurrent ? "700" : "500",
+                            marginBottom: "2px",
+                          }}
+                        >
+                          <span>{getRoleLabel(r)}</span>
+                          {isCurrent && <CheckCircle2 size={16} color={roleColors[r]} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* AI Copilot Button */}
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setCopilotOpen(true)}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                padding: "6px 12px",
-                borderRadius: "var(--radius-full)",
-                background: "var(--surface-hover)",
+                gap: "6px",
+                fontSize: "12px",
               }}
             >
-              <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  background: `${color}20`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color,
-                }}
-              >
-                {profile?.displayName?.charAt(0)?.toUpperCase() || "U"}
-              </div>
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "var(--text-primary)",
-                }}
-                className="hidden sm:inline"
-              >
-                {profile?.displayName || "User"}
-              </span>
-            </div>
+              <Cpu size={15} />
+              <span className="hidden sm:inline">{t("common.copilot", "PeriAI Copilot")}</span>
+            </button>
           </div>
         </header>
 
-        {/* Page content */}
-        <div className="animate-fade-in">{children}</div>
-
-        {/* Global AI Copilot Floating Assistant */}
-        <AICopilotModal role={role} />
+        {/* Content area */}
+        <div style={{ padding: "24px" }}>{children}</div>
       </main>
+
+      {/* AI Copilot Modal */}
+      <AICopilotModal
+        isOpen={copilotOpen}
+        onOpen={() => setCopilotOpen(true)}
+        onClose={() => setCopilotOpen(false)}
+        role={role}
+      />
     </div>
   );
 }

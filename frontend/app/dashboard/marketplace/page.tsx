@@ -27,7 +27,11 @@ import {
   AlertCircle,
   Truck,
   IndianRupee,
+  Phone,
+  Building2,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
+import { WarehouseContactModal, WarehouseContactInfo } from "@/components/warehouse-contact-modal";
 
 interface SurplusListing {
   id: string;
@@ -42,11 +46,13 @@ interface SurplusListing {
   hoursRemaining: number;
   quality: string;
   status: "available" | "in_escrow" | "completed";
+  reason?: string;
   userId?: string;
 }
 
 export default function MarketplacePage() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
+  const { t } = useI18n();
   const [listings, setListings] = useState<SurplusListing[]>([]);
   const [activeTab, setActiveTab] = useState<"browse" | "my-listings">("browse");
   const [showListModal, setShowListModal] = useState(false);
@@ -79,16 +85,18 @@ export default function MarketplacePage() {
         q,
         (snapshot) => {
           if (!snapshot.empty) {
-            const dbListings = snapshot.docs.map((d) => ({
-              id: d.id,
-              ...d.data(),
+            const dbListings = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
             })) as SurplusListing[];
             setListings(dbListings);
-            localStorage.setItem(storageKey, JSON.stringify(dbListings));
+            if (typeof window !== "undefined") {
+              localStorage.setItem(storageKey, JSON.stringify(dbListings));
+            }
           }
         },
         (err) => {
-          console.warn("Firestore marketplace subscription notice:", err.message);
+          console.warn("Firestore marketplace listener notice:", err);
         }
       );
       return () => unsubscribe();
@@ -97,15 +105,15 @@ export default function MarketplacePage() {
     }
   }, []);
 
-  // New Listing Form
+  // Form state for creating anonymous surplus lot
   const [form, setForm] = useState({
     commodity: "Tomato",
-    quantityKg: 200,
+    quantityKg: 800,
     originalPrice: 40,
-    discountedPrice: 24,
-    hoursRemaining: 24,
-    locationArea: "Coimbatore City North",
-    quality: "Grade A - Table Grade",
+    discountedPrice: 22,
+    locationArea: "Coimbatore APMC Cluster",
+    quality: "Grade A",
+    hoursRemaining: 36,
   });
 
   const handleCreateListing = async (e: React.FormEvent) => {
@@ -113,24 +121,25 @@ export default function MarketplacePage() {
     const discount = Math.round(
       ((form.originalPrice - form.discountedPrice) / form.originalPrice) * 100
     );
-    const newEntry: SurplusListing = {
+    const created: SurplusListing = {
       id: `surplus-${Date.now()}`,
-      anonymizedSeller: `Protected Node #${Math.floor(1000 + Math.random() * 9000)}`,
+      anonymizedSeller: `Participant Node #${Math.floor(1000 + Math.random() * 9000)}`,
       locationArea: form.locationArea,
-      distanceKm: 3.5,
+      distanceKm: Math.floor(5 + Math.random() * 45),
       commodity: form.commodity,
       quantityKg: Number(form.quantityKg),
       originalPrice: Number(form.originalPrice),
       discountedPrice: Number(form.discountedPrice),
       discountPct: discount,
-      hoursRemaining: Number(form.hoursRemaining),
       quality: form.quality,
+      hoursRemaining: Number(form.hoursRemaining),
       status: "available",
-      userId: user?.uid,
+      reason: "Surplus Redistribution Order",
     };
 
-    const updated = [newEntry, ...listings];
+    const updated = [created, ...listings];
     setListings(updated);
+
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -139,21 +148,26 @@ export default function MarketplacePage() {
       }
     }
 
+    // Persist to Firestore
     try {
       await addDoc(collection(db, "surplus_listings"), {
-        ...newEntry,
+        ...created,
+        sellerUid: user?.uid || "anon-user",
         createdAt: serverTimestamp(),
       });
     } catch (err) {
-      console.warn("Firestore marketplace listing save notice:", err);
+      console.warn("Firestore surplus listing notice:", err);
     }
 
     setShowListModal(false);
   };
 
-  const handleInitiateEscrow = async (id: string, commodity: string) => {
-    const updated = listings.map((item) =>
-      item.id === id ? { ...item, status: "in_escrow" as const } : item
+  const handleInitiateEscrow = async (listingId: string, commodity: string) => {
+    const target = listings.find((l) => l.id === listingId);
+    if (!target) return;
+
+    const updated = listings.map((l) =>
+      l.id === listingId ? { ...l, status: "in_escrow" as const } : l
     );
     setListings(updated);
 
@@ -161,21 +175,23 @@ export default function MarketplacePage() {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (err) {
-        console.warn("Marketplace cache write error:", err);
+        console.warn("Marketplace cache update error:", err);
       }
     }
 
+    // Sync status to Firestore
     try {
-      await updateDoc(doc(db, "surplus_listings", id), {
+      await updateDoc(doc(db, "surplus_listings", listingId), {
         status: "in_escrow",
-        updatedAt: serverTimestamp(),
+        buyerUid: user?.uid || "escrow-buyer",
+        escrowLockedAt: serverTimestamp(),
       });
-    } catch (err) {
-      console.warn("Firestore escrow update notice:", err);
+    } catch (e) {
+      console.warn("Firestore escrow status update notice:", e);
     }
 
-    setEscrowSuccess(`Escrow smart contract initiated for ${commodity}. Rebalancing route and transfer order generated.`);
-    setTimeout(() => setEscrowSuccess(null), 5000);
+    setEscrowSuccess(`Escrow contract activated for ${target.quantityKg}kg ${commodity}. Total funds (Rs ${(target.quantityKg * target.discountedPrice).toLocaleString()}) locked in Smart Contract.`);
+    setTimeout(() => setEscrowSuccess(null), 6000);
   };
 
   const filteredListings = listings.filter((item) =>
@@ -217,18 +233,18 @@ export default function MarketplacePage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <h3 style={{ fontSize: "17px", fontWeight: "700", color: "var(--text-primary)" }}>
-                Anonymized B2B Surplus Rebalancing Mesh
+                {t("marketplace.title", "Anonymized B2B Surplus Rebalancing Mesh")}
               </h3>
               <span className="badge badge-success">RLS Privacy Active</span>
             </div>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>
-              Offload over-ordered stock or buy discounted wholesale produce without exposing commercial identity to competitors.
+              {t("marketplace.subtitle", "Offload over-ordered stock or buy discounted wholesale produce without exposing commercial identity to competitors.")}
             </p>
           </div>
         </div>
 
         <button className="btn btn-primary" onClick={() => setShowListModal(true)}>
-          <Plus size={18} /> List Anonymous Surplus
+          <Plus size={18} /> {t("marketplace.listBtn", "List Anonymous Surplus")}
         </button>
       </div>
 
@@ -259,13 +275,13 @@ export default function MarketplacePage() {
           onClick={() => setActiveTab("browse")}
           className={`btn ${activeTab === "browse" ? "btn-primary" : "btn-secondary"}`}
         >
-          <Store size={16} /> Available Surplus Listings
+          <Store size={16} /> {t("marketplace.available", "Available Surplus Listings")}
         </button>
         <button
           onClick={() => setActiveTab("my-listings")}
           className={`btn ${activeTab === "my-listings" ? "btn-primary" : "btn-secondary"}`}
         >
-          <Truck size={16} /> In-Escrow Rebalancing
+          <Lock size={16} /> {t("marketplace.inEscrow", "In-Escrow Rebalancing")}
         </button>
       </div>
 
@@ -276,95 +292,69 @@ export default function MarketplacePage() {
             <Store size={28} color="var(--primary)" />
           </div>
           <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>
-            {activeTab === "browse" ? "No Active Surplus Listings" : "No Active In-Escrow Transfers"}
+            {t("marketplace.emptyTitle", "No Active Surplus Listings")}
           </h3>
           <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 20px" }}>
-            {activeTab === "browse"
-              ? "All surplus stock across the mesh has been cleared. Click below to list any excess produce for nearby buyers."
-              : "When a surplus batch is secured via smart escrow, transit and routing contracts will appear here."}
+            {t("marketplace.emptyDesc", "All surplus stock across the mesh has been cleared. Click below to list excess produce.")}
           </p>
-          {activeTab === "browse" && (
-            <button className="btn btn-primary" onClick={() => setShowListModal(true)}>
-              <Plus size={16} /> List Anonymous Surplus
-            </button>
-          )}
+          <button className="btn btn-primary" onClick={() => setShowListModal(true)}>
+            <Plus size={16} /> {t("marketplace.listBtn", "List Anonymous Surplus")}
+          </button>
         </div>
       )}
 
-      {/* Listings Grid */}
+      {/* Grid of Listings */}
       {filteredListings.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-            gap: "20px",
-          }}
-          className="stagger-children"
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }} className="stagger-children">
           {filteredListings.map((item) => {
-            const savingsTotal = (item.originalPrice - item.discountedPrice) * item.quantityKg;
+            const savingsPerKg = item.originalPrice - item.discountedPrice;
+            const savingsTotal = savingsPerKg * item.quantityKg;
 
             return (
-              <div
-                key={item.id}
-                className="card"
-                style={{
-                  padding: "24px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  position: "relative",
-                  border: item.status === "in_escrow" ? "2px solid #2196F3" : "1px solid var(--border)",
-                }}
-              >
+              <div key={item.id} className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <div>
-                  {/* Top Bar: Protected Node & Distance */}
+                  {/* Card Header: Node ID + Distance */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <Lock size={14} color="var(--text-tertiary)" />
-                      <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                        {item.anonymizedSeller}
-                      </span>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+                        <ShieldCheck size={14} color="var(--primary)" />
+                        <span style={{ fontSize: "12px", fontWeight: "700", color: "var(--primary-dark)" }}>
+                          {item.anonymizedSeller}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--text-tertiary)" }}>
+                        <MapPin size={12} /> {item.locationArea} • ~{item.distanceKm} km away
+                      </div>
                     </div>
-                    <span className="badge badge-info" style={{ gap: "4px" }}>
-                      <MapPin size={12} /> {item.distanceKm} km away
+                    <span className={`badge ${item.status === "available" ? "badge-success" : "badge-warning"}`}>
+                      {item.status === "available" ? "Available Now" : "Escrow Pending"}
                     </span>
                   </div>
 
-                  {/* Commodity Title */}
-                  <h4 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
-                    {item.commodity}
-                  </h4>
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "16px" }}>
-                    {item.quality} • {item.locationArea}
-                  </p>
-
-                  {/* Pricing Box */}
-                  <div
-                    style={{
-                      background: "var(--surface-hover)",
-                      borderRadius: "12px",
-                      padding: "14px 16px",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  {/* Commodity & Price Highlight Box */}
+                  <div style={{ background: "var(--surface-hover)", borderRadius: "12px", padding: "14px", marginBottom: "14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                       <div>
-                        <span style={{ fontSize: "12px", color: "var(--text-tertiary)", textDecoration: "line-through" }}>
-                          Rs {item.originalPrice}/kg
+                        <h4 style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-primary)" }}>
+                          {item.commodity}
+                        </h4>
+                        <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                          {item.quality}
                         </span>
-                        <div style={{ fontSize: "24px", fontWeight: "800", color: "var(--primary)" }}>
-                          Rs {item.discountedPrice}
-                          <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)" }}>/kg</span>
-                        </div>
                       </div>
+
                       <div style={{ textAlign: "right" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                          <span style={{ fontSize: "20px", fontWeight: "800", color: "var(--primary)" }}>
+                            Rs {item.discountedPrice}
+                          </span>
+                          <span style={{ fontSize: "13px", color: "var(--text-tertiary)", textDecoration: "line-through" }}>
+                            Rs {item.originalPrice}
+                          </span>
+                        </div>
                         <span
                           style={{
-                            padding: "4px 10px",
-                            borderRadius: "20px",
-                            background: "rgba(244,67,54,0.12)",
-                            color: "#D32F2F",
+                            color: "var(--error)",
                             fontSize: "13px",
                             fontWeight: "700",
                             display: "inline-block",

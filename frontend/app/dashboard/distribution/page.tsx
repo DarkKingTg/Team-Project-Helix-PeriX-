@@ -17,6 +17,7 @@ import {
   X,
   Trash2,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
 
 interface DeliveryRoute {
   id: string;
@@ -33,6 +34,7 @@ interface DeliveryRoute {
 
 export default function DistributionPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [routes, setRoutes] = useState<DeliveryRoute[]>([]);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeMessage, setOptimizeMessage] = useState<string | null>(null);
@@ -120,22 +122,22 @@ export default function DistributionPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Wholesale Logistics and Multi-Stop Dispatch
+              {t("distribution.title", "Wholesale Logistics and Multi-Stop Dispatch")}
             </h2>
             <span className="badge badge-success">Google OR-Tools Integrated</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Multi-echelon route optimization, cold-chain IoT telemetry, and automated drop sequence planning
+            {t("distribution.subtitle", "Multi-echelon route optimization, cold-chain IoT telemetry, and automated drop sequence planning.")}
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "10px" }}>
           <button className="btn btn-secondary" onClick={() => setShowModal(true)}>
-            <Plus size={18} /> Schedule Route
+            <Plus size={18} /> {t("distribution.scheduleBtn", "Schedule Route")}
           </button>
           <button className="btn btn-primary" onClick={handleRunOROptimization} disabled={optimizing || routes.length === 0}>
             <Sparkles size={18} />
-            {optimizing ? "Optimizing Routes..." : "Run OR-Tools Optimizer"}
+            {optimizing ? "Optimizing Routes..." : t("distribution.optimizeBtn", "Run OR-Tools Optimizer")}
           </button>
         </div>
       </div>
@@ -167,12 +169,12 @@ export default function DistributionPage() {
           <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "var(--surface-hover)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
             <Truck size={28} color="var(--primary)" />
           </div>
-          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>No Delivery Routes Scheduled</h3>
+          <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>{t("distribution.emptyTitle", "No Delivery Routes Scheduled")}</h3>
           <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 20px" }}>
-            Create your first reefer route to optimize waypoint sequences, reduce fuel burn, and monitor cold-chain temperatures.
+            {t("distribution.emptyDesc", "Create your first reefer route to optimize waypoint sequences, reduce fuel burn, and monitor cold-chain temperatures.")}
           </p>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            <Plus size={16} /> Schedule First Reefer Route
+            <Plus size={16} /> {t("distribution.scheduleBtn", "Schedule Route")}
           </button>
         </div>
       )}

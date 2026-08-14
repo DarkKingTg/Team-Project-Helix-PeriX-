@@ -28,6 +28,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { useI18n } from "@/lib/i18n-context";
 
 interface MandiPriceRecord {
   id: string;
@@ -143,6 +144,7 @@ const PRICE_TREND_DATA = [
 ];
 
 export default function MarketPricesPage() {
+  const { t } = useI18n();
   const [records, setRecords] = useState<MandiPriceRecord[]>(INITIAL_RECORDS);
   const [selectedCommodity, setSelectedCommodity] = useState("Tomato");
   const [searchQuery, setSearchQuery] = useState("");
@@ -193,7 +195,7 @@ export default function MarketPricesPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <BarChart3 size={26} color="var(--primary)" />
             <h2 style={{ fontSize: "24px", fontWeight: "800", color: "var(--text-primary)" }}>
-              Live Mandi Market Intelligence
+              {t("market.title", "Live Mandi Market Intelligence")}
             </h2>
             <span
               style={{
@@ -213,7 +215,7 @@ export default function MarketPricesPage() {
             </span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Real-time daily modal prices & arrival tonnages across major Indian APMC mandis.
+            {t("market.subtitle", "Real-time wholesale prices, arrival volumes, and 7-day price trajectory forecasts across India.")}
           </p>
         </div>
 
@@ -223,7 +225,7 @@ export default function MarketPricesPage() {
           </span>
           <button className="btn btn-primary" onClick={handleManualLiveSync} disabled={syncing}>
             <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
-            {syncing ? "Syncing Live API..." : "Sync Live Mandi API"}
+            {syncing ? "Syncing Feed..." : t("market.syncGov", "Live Sync Agmarknet")}
           </button>
         </div>
       </div>

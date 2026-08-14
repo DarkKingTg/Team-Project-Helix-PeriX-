@@ -29,7 +29,12 @@ import {
   ThermometerSnowflake,
   Layers,
   Sparkles,
+  Phone,
+  Building2,
+  MessageSquare,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
+import { WarehouseContactModal, WarehouseContactInfo } from "@/components/warehouse-contact-modal";
 
 interface InventoryItem {
   id: string;
@@ -54,12 +59,14 @@ const SAMPLE_COMMODITIES = [
 
 export default function InventoryPage() {
   const { user, profile } = useAuth();
+  const { t } = useI18n();
   const role = profile?.role || "mandi";
   const isWholesaler = role === "wholesaler";
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [contactWarehouse, setContactWarehouse] = useState<WarehouseContactInfo | null>(null);
 
   const [form, setForm] = useState({
     commodity: "Tomato",
@@ -89,75 +96,57 @@ export default function InventoryPage() {
           }
         }
       } catch (err) {
-        console.warn("LocalStorage read error:", err);
+        console.warn("Inventory storage read error:", err);
       }
     }
   }, [storageKey]);
 
-  // 2. Fetch from Backend API + Firestore Real-Time Sync
+  // 2. Fetch from Backend REST API + Live Firestore listener
   useEffect(() => {
     let isMounted = true;
 
     async function fetchBackendInventory() {
-      if (isWholesaler) {
-        const backendItems = await apiClient.inventory.getWholesalerInventory();
+      try {
+        let backendItems: InventoryItem[] | null = null;
+        if (isWholesaler) {
+          backendItems = await apiClient.inventory.getWholesalerInventory();
+        } else {
+          backendItems = await apiClient.inventory.getMandiInventory();
+        }
         if (isMounted && backendItems && Array.isArray(backendItems) && backendItems.length > 0) {
           setItems(backendItems);
-          localStorage.setItem(storageKey, JSON.stringify(backendItems));
         }
-      } else {
-        const backendItems = await apiClient.inventory.getMandiInventory();
-        if (isMounted && backendItems && Array.isArray(backendItems) && backendItems.length > 0) {
-          setItems(backendItems);
-          localStorage.setItem(storageKey, JSON.stringify(backendItems));
-        }
+      } catch (err) {
+        console.warn("Backend fetch fallback to cache/firestore:", err);
       }
     }
 
     fetchBackendInventory();
 
-    // Firestore Listener
     if (user?.uid) {
       try {
-        const q = query(collection(db, collectionName), where("userId", "==", user.uid));
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            if (!snapshot.empty) {
-              const dbItems = snapshot.docs.map((d) => ({
-                id: d.id,
-                ...d.data(),
-              })) as InventoryItem[];
-              if (isMounted) {
-                setItems(dbItems);
-                localStorage.setItem(storageKey, JSON.stringify(dbItems));
-              }
-            }
-          },
-          (err) => {
-            console.warn("Firestore subscription notice (using local/backend store):", err.message);
+        const q = query(collection(db, collectionName), where("nodeId", "==", user.uid));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            const fetched = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as InventoryItem[];
+            if (isMounted) setItems(fetched);
           }
-        );
-        return () => {
-          isMounted = false;
-          unsubscribe();
-        };
-      } catch (e) {
-        console.warn("Firestore setup notice:", e);
+        });
+        return () => unsubscribe();
+      } catch (err) {
+        console.warn("Firestore inventory listener error:", err);
       }
     }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.uid, collectionName, isWholesaler, storageKey]);
+  }, [user, collectionName, isWholesaler]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const newItem: InventoryItem = {
-      id: editingId || `item-${Date.now()}`,
+    const newItemData = {
       commodity: form.commodity,
       quantity: Number(form.quantity),
       qualityGrade: form.qualityGrade,
@@ -168,55 +157,55 @@ export default function InventoryPage() {
       expiryDays: Number(form.expiryDays),
       sourceFarmer: form.sourceFarmer,
       destinationNode: form.destinationNode,
+      nodeId: user?.uid || "demo-node-001",
     };
 
-    let updatedList: InventoryItem[];
+    // 1. Optimistic Local State Update
+    let updatedList: InventoryItem[] = [];
     if (editingId) {
-      updatedList = items.map((item) => (item.id === editingId ? newItem : item));
+      updatedList = items.map((i) => (i.id === editingId ? { ...i, ...newItemData, id: i.id } as InventoryItem : i));
     } else {
-      updatedList = [newItem, ...items];
+      const createdItem: InventoryItem = { id: `inv-${Date.now()}`, ...newItemData };
+      updatedList = [createdItem, ...items];
     }
-
-    // 1. Immediately update React State
     setItems(updatedList);
 
-    // 2. Immediately save to LocalStorage (Guaranteed persistence on page refresh)
+    // 2. Save directly to LocalStorage
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updatedList));
       } catch (err) {
-        console.warn("LocalStorage write error:", err);
+        console.warn("LocalStorage save error:", err);
       }
     }
 
-    // 3. Save to Backend Microservice
+    // 3. Persist to Backend REST API
     try {
       if (isWholesaler) {
-        await apiClient.inventory.addWholesalerInventory(newItem);
+        await apiClient.inventory.createWholesalerInventory(newItemData);
       } else {
-        await apiClient.inventory.addMandiInventory(newItem);
+        await apiClient.inventory.createMandiInventory(newItemData);
       }
     } catch (err) {
-      console.warn("Backend inventory save notice:", err);
+      console.warn("Backend save error:", err);
     }
 
-    // 4. Save to Cloud Firestore
+    // 4. Persist to Cloud Firestore
     if (user?.uid) {
       try {
         if (editingId) {
           await updateDoc(doc(db, collectionName, editingId), {
-            ...newItem,
+            ...newItemData,
             updatedAt: serverTimestamp(),
           });
         } else {
           await addDoc(collection(db, collectionName), {
-            ...newItem,
-            userId: user.uid,
+            ...newItemData,
             createdAt: serverTimestamp(),
           });
         }
-      } catch (e) {
-        console.warn("Firestore database save notice (local persistence active):", e);
+      } catch (err) {
+        console.warn("Firestore sync fallback notice:", err);
       }
     }
 
@@ -225,15 +214,36 @@ export default function InventoryPage() {
     setEditingId(null);
   };
 
+  const handleEdit = (item: InventoryItem) => {
+    setForm({
+      commodity: item.commodity || "Tomato",
+      quantity: item.quantity || 100,
+      qualityGrade: item.qualityGrade || "A - Premium",
+      buyPrice: item.buyPrice || 25,
+      sellPrice: item.sellPrice || 32,
+      storageType: item.storageType || "cold_storage",
+      coldChain: item.coldChain !== undefined ? item.coldChain : true,
+      expiryDays: item.expiryDays || 7,
+      sourceFarmer: item.sourceFarmer || "Farmer Collective",
+      destinationNode: item.destinationNode || "Regional Hub",
+    });
+    setEditingId(item.id);
+    setShowForm(true);
+  };
+
   const handleDelete = async (id: string) => {
-    const updatedList = items.filter((item) => item.id !== id);
+    if (!confirm("Are you sure you want to delete this inventory record?")) return;
+
+    // Optimistic Delete
+    const updatedList = items.filter((i) => i.id !== id);
     setItems(updatedList);
 
+    // Update LocalStorage
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updatedList));
       } catch (err) {
-        console.warn("LocalStorage delete write error:", err);
+        console.warn("LocalStorage delete error:", err);
       }
     }
 
@@ -264,12 +274,12 @@ export default function InventoryPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
         <div>
           <h1 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-            {isWholesaler ? "Wholesale Hub and Reefer Logistics" : "Mandi Aggregation and Shelf-Life Tracker"}
+            {isWholesaler ? t("inventory.wholesalerTitle", "Wholesale Hub and Reefer Logistics") : t("inventory.mandiTitle", "Mandi Aggregation and Shelf-Life Tracker")}
           </h1>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
             {isWholesaler
-              ? "Cold-chain telemetry, multi-drop load dispatching, and margin optimization."
-              : "Batch intake logger, Arrhenius respiration decay curves, and APMC commission spreads."}
+              ? t("inventory.wholesalerSubtitle", "Cold-chain telemetry, multi-drop load dispatching, and margin optimization.")
+              : t("inventory.mandiSubtitle", "Batch intake logger, Arrhenius respiration decay curves, and APMC commission spreads.")}
           </p>
         </div>
 
@@ -281,7 +291,7 @@ export default function InventoryPage() {
           }}
         >
           {showForm ? <X size={18} /> : <Plus size={18} />}
-          {showForm ? "Close Form" : isWholesaler ? "Log Reefer Consignment" : "Log Mandi Batch"}
+          {showForm ? t("common.cancel", "Close Form") : isWholesaler ? t("inventory.logReeferBtn", "Log Reefer Consignment") : t("inventory.logMandiBtn", "Log Mandi Batch")}
         </button>
       </div>
 
@@ -524,6 +534,125 @@ export default function InventoryPage() {
           </table>
         </div>
       )}
+
+      {/* Peer Warehouse Rebalancing Hubs (Only for Mandi and Wholesaler / Warehouse Personnel) */}
+      {(role === "wholesaler" || role === "mandi" || role === "admin") && (
+        <div className="card" style={{ padding: "24px", marginTop: "28px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(33,150,243,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#1976D2" }}>
+                <Building2 size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
+                  Peer Warehouse Rebalancing Directory (Shortage & Surplus Matching)
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                  If your facility has a stock shortage or excess produce, directly contact connected regional warehouse managers to coordinate inter-hub transfers.
+                </p>
+              </div>
+            </div>
+            <span className="badge badge-success">Inter-Facility P2P Active</span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+            {[
+              {
+                warehouseName: "Kovai Agro Hub & Cold Storage",
+                managerName: "Suresh Kumar",
+                phone: "+91 98421 77320",
+                email: "suresh.kovai@perix-logistics.in",
+                address: "Plot 42, APMC Industrial Cluster, Coimbatore, TN",
+                role: "wholesaler" as const,
+                surplusCommodity: "Tomato",
+                surplusQuantityKg: 4200,
+                availableCapacityTonnes: 120,
+                hasColdStorage: true,
+                status: "Surplus Available",
+              },
+              {
+                warehouseName: "Nilgiris Fresh Harvest Consolidation Center",
+                managerName: "Anand Rajan",
+                phone: "+91 94432 11890",
+                email: "anand.nilgiris@perix-logistics.in",
+                address: "Mettupalayam Agro Cold Terminal, Tamil Nadu",
+                role: "mandi" as const,
+                surplusCommodity: "Potato",
+                surplusQuantityKg: 8500,
+                availableCapacityTonnes: 240,
+                hasColdStorage: true,
+                status: "Surplus Available",
+              },
+              {
+                warehouseName: "Tiruppur Wholesale Buffer Terminal",
+                managerName: "Vignesh Murugan",
+                phone: "+91 98940 55214",
+                email: "vignesh.tiruppur@perix-logistics.in",
+                address: "Ring Road Logistics Park, Tiruppur, TN",
+                role: "wholesaler" as const,
+                surplusCommodity: "Onion",
+                surplusQuantityKg: 6200,
+                availableCapacityTonnes: 85,
+                hasColdStorage: false,
+                status: "Surplus Available",
+              },
+            ].map((wh, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "12px",
+                  padding: "18px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  gap: "14px",
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
+                      {wh.warehouseName}
+                    </h4>
+                    <span className="badge badge-info" style={{ fontSize: "10px" }}>{wh.status}</span>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "10px" }}>
+                    Manager: <strong style={{ color: "var(--text-primary)" }}>{wh.managerName}</strong>
+                  </div>
+
+                  <div style={{ background: "var(--surface-hover)", padding: "10px 12px", borderRadius: "8px", fontSize: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--text-tertiary)" }}>Surplus Produce:</span>
+                      <strong style={{ color: "var(--primary)" }}>{wh.surplusQuantityKg.toLocaleString()} kg {wh.surplusCommodity}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--text-tertiary)" }}>Buffer Space:</span>
+                      <strong style={{ color: "#1565C0" }}>{wh.availableCapacityTonnes} Tonnes</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  style={{ width: "100%", justifyContent: "center", gap: "6px" }}
+                  onClick={() => setContactWarehouse(wh)}
+                >
+                  <Phone size={14} /> Contact Facility Manager
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Warehouse Direct Contact Modal */}
+      <WarehouseContactModal
+        isOpen={!!contactWarehouse}
+        onClose={() => setContactWarehouse(null)}
+        warehouse={contactWarehouse}
+      />
     </div>
   );
 }

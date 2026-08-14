@@ -20,6 +20,13 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: UserRole;
+  phone?: string;
+  warehouseName?: string;
+  facilityAddress?: string;
+  storageCapacityTonnes?: number;
+  availableCapacityTonnes?: number;
+  hasColdStorage?: boolean;
+  contactPerson?: string;
   location?: {
     state: string;
     district: string;
@@ -42,6 +49,7 @@ interface AuthContextType {
   loginAsDemo: (role: UserRole) => void;
   signOut: () => Promise<void>;
   updateUserRole: (role: UserRole) => Promise<void>;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   switchRole: (role: UserRole) => void;
 }
 
@@ -276,6 +284,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+    if (profile) {
+      const merged = { ...profile, ...updates };
+      setProfile(merged);
+      if (user) {
+        try {
+          await setDoc(doc(db, "users", user.uid), updates, { merge: true });
+        } catch (e) {
+          console.warn("Firestore user profile update error:", e);
+        }
+      }
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -288,6 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginAsDemo,
         signOut,
         updateUserRole,
+        updateUserProfile,
         switchRole,
       }}
     >

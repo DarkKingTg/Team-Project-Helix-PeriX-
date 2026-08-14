@@ -23,6 +23,7 @@ import {
   Snowflake,
   Sun,
 } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
 
 interface MarkdownItem {
   id: string;
@@ -47,6 +48,7 @@ const COMMODITY_OPTIONS = [
 
 export default function DynamicPricingPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [items, setItems] = useState<MarkdownItem[]>([]);
   const [calculating, setCalculating] = useState(false);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
@@ -220,12 +222,12 @@ export default function DynamicPricingPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Retail Dynamic Markdown and POS Engine
+              {t("pricing.title", "Retail Dynamic Markdown and POS Engine")}
             </h2>
             <span className="badge badge-success">Sub-200ms Latency</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Trained Arrhenius respiration decay kinetics, thermal stress sensitivity, and real-time POS barcode syncing.
+            {t("pricing.subtitle", "Trained Arrhenius respiration decay kinetics, thermal stress sensitivity, and real-time POS barcode syncing.")}
           </p>
         </div>
 
@@ -234,7 +236,7 @@ export default function DynamicPricingPage() {
           onClick={handlePushToPOS}
           disabled={items.length === 0 || items.every((i) => i.posStatus === "synced")}
         >
-          <UploadCloud size={18} /> Push Markdowns to POS
+          <UploadCloud size={18} /> {t("pricing.pushPos", "Push Markdowns to POS")}
         </button>
       </div>
 
@@ -273,7 +275,7 @@ export default function DynamicPricingPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Zap size={20} color="var(--primary)" />
             <h3 style={{ fontSize: "17px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Multi-Variable Thermodynamic Markdown Model (Trained ML)
+              {t("pricing.calculatorTitle", "Multi-Variable Thermodynamic Markdown Model (Trained ML)")}
             </h3>
           </div>
 

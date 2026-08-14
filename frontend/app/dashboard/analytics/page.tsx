@@ -25,6 +25,7 @@ import {
   Bar,
   Legend,
 } from "recharts";
+import { useI18n } from "@/lib/i18n-context";
 
 const DUAL_KPI_TRENDS = [
   { month: "Jan", wastePreventedKg: 420, revenueRecovered: 38000, co2SavedKg: 840 },
@@ -44,6 +45,7 @@ const NODE_CONTRIBUTIONS = [
 ];
 
 export default function AnalyticsPage() {
+  const { t } = useI18n();
   const [timeRange, setTimeRange] = useState("7m");
 
   return (
@@ -53,12 +55,12 @@ export default function AnalyticsPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Dual-KPI Waste & Profitability Analytics
+              {t("analytics.title", "Dual-KPI Waste & Profitability Analytics")}
             </h2>
             <span className="badge badge-success">UN SDG 12.3 Aligned</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Correlating physical food waste reduction tonnage directly with recovered commercial revenue
+            {t("analytics.subtitle", "Tracking cumulative landfill waste prevented and dynamic revenue recovery across the entire PeriX decentralized mesh.")}
           </p>
         </div>
 

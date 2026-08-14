@@ -20,6 +20,7 @@ import { useAuth, UserRole } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n-context";
 
 interface UserRecord {
   id: string;
@@ -35,6 +36,7 @@ interface UserRecord {
 
 export default function UsersManagementPage() {
   const { user, profile, switchRole } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -128,12 +130,12 @@ export default function UsersManagementPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Network Participant and Node Oversight
+              {t("users.title", "Network Participant and Node Oversight")}
             </h2>
             <span className="badge badge-success">Admin Superuser</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Monitor real node registrations, active commodity tonnage, and cross-tier access permissions.
+            {t("users.subtitle", "Monitor real node registrations, active commodity tonnage, and cross-tier access permissions.")}
           </p>
         </div>
       </div>

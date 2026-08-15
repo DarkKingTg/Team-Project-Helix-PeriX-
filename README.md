@@ -3,14 +3,24 @@
 
 ---
 
-##  Key Project Documentation (For Judges & Evaluators)
+## 🌐 Live Production Deployments
+
+| Service | Platform | Live Production URL | Health Check / Status |
+|---|---|---|---|
+| **🎨 Web Application (Frontend)** | **Vercel** | **[team-project-helix-perix.vercel.app](https://team-project-helix-perix.vercel.app)** | `Production Live (Next.js 16)` |
+| **⚡ Backend API Microservice** | **Render** | **[team-project-helix-perix.onrender.com](https://team-project-helix-perix.onrender.com)** | [`/health`](https://team-project-helix-perix.onrender.com/health) |
+| **🧠 10-Layer AI ML Microservice** | **Render** | **[team-project-helix-perix-2.onrender.com](https://team-project-helix-perix-2.onrender.com)** | [`/api/health`](https://team-project-helix-perix-2.onrender.com/api/health) |
+
+---
+
+## 📑 Key Project Documentation (For Judges & Evaluators)
 
 | Document | Purpose |
 |---|---|
-|  **[`JUDGES_COMPREHENSIVE_DOCUMENTATION.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/JUDGES_COMPREHENSIVE_DOCUMENTATION.md)** | **Master Pitch & Technical Document**: 10-Layer Architecture, Mathematical Formulations, Q&A Defense, and 3-Minute Live Stage Demo Script. |
-|  **[`PPT_DOCUMENTATION.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/PPT_DOCUMENTATION.md)** | **10-Slide Pitch Deck Guide**: Exact slide contents, visual wireframes, and word-for-word speaker notes. |
-|  **[`API_KEYS_GUIDE.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/API_KEYS_GUIDE.md)** | **Live API Setup Guide**: How to get free API keys for `data.gov.in` (Agmarknet), `OpenWeatherMap`, and `Firebase`. |
-|  **[`DATASET_DOCUMENTATION.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/ml-service/data/DATASET_DOCUMENTATION.md)** | **Dataset Specifications**: 37,097 official Government of India Agmarknet historical records across 16 perishables. |
+| 📋 **[`JUDGES_COMPREHENSIVE_DOCUMENTATION.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/JUDGES_COMPREHENSIVE_DOCUMENTATION.md)** | **Master Pitch & Technical Document**: 10-Layer Architecture, Mathematical Formulations, Q&A Defense, and 3-Minute Live Stage Demo Script. |
+| 📊 **[`PPT_DOCUMENTATION.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/PPT_DOCUMENTATION.md)** | **10-Slide Pitch Deck Guide**: Exact slide contents, visual wireframes, and word-for-word speaker notes. |
+| 🔑 **[`API_KEYS_GUIDE.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/API_KEYS_GUIDE.md)** | **Live API Setup Guide**: How to get free API keys for `data.gov.in` (Agmarknet), `OpenWeatherMap`, and `Firebase`. |
+| 📈 **[`DATASET_DOCUMENTATION.md`](file:///c:/Users/WaveWalker/Downloads/MyStuffs/ForPro/MyWorks/hackthons%20N%20shit/PerishNetwork/ml-service/data/DATASET_DOCUMENTATION.md)** | **Dataset Specifications**: 37,097 official Government of India Agmarknet historical records across 16 perishables. |
 
 ---
 

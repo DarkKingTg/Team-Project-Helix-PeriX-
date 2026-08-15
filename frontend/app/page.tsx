@@ -87,6 +87,17 @@ const roleConfig = [
     bgGradient: "linear-gradient(135deg, rgba(33,150,243,0.12), rgba(100,181,246,0.06))",
     borderColor: "rgba(33,150,243,0.3)",
   },
+  {
+    role: "retailer" as UserRole,
+    icon: Zap,
+    label: "Retailer (Supermarket POS)",
+    subtitle: "Store POS & dynamic markdown clearance",
+    description: "Sub-20ms POS price engine, Arrhenius decay kinetics & near-expiry shelf-life clearance.",
+    color: "#9C27B0",
+    badge: "Retail POS Hub",
+    bgGradient: "linear-gradient(135deg, rgba(156,39,176,0.12), rgba(186,104,200,0.06))",
+    borderColor: "rgba(156,39,176,0.3)",
+  },
 ];
 
 function formatAuthError(err: unknown): string {
@@ -116,6 +127,8 @@ function getDashboardRouteForRole(role?: UserRole | string | null): string {
       return "/dashboard/inventory";
     case "wholesaler":
       return "/dashboard/wholesaler";
+    case "retailer":
+      return "/dashboard/pricing";
     case "admin":
       return "/dashboard";
     default:
@@ -566,59 +579,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* 1-Click Demo Profiles (Shown only on Login tab) */}
-          {mode === "login" && (
-            <div
-              style={{
-                background: "linear-gradient(135deg, rgba(46,125,50,0.08), rgba(76,175,80,0.04))",
-                border: "1px solid rgba(46,125,50,0.25)",
-                borderRadius: "16px",
-                padding: "16px 18px",
-                marginBottom: "20px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                <Zap size={17} color="var(--primary)" />
-                <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>
-                  1-Click Instant Demo Login
-                </span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo("farmer")}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: "flex-start", gap: "6px", fontSize: "12px", padding: "7px 10px" }}
-                >
-                  <Sprout size={15} color="#4CAF50" /> Farmer Demo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo("mandi")}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: "flex-start", gap: "6px", fontSize: "12px", padding: "7px 10px" }}
-                >
-                  <Store size={15} color="#FF9800" /> Mandi Agent
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo("wholesaler")}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: "flex-start", gap: "6px", fontSize: "12px", padding: "7px 10px" }}
-                >
-                  <Truck size={15} color="#2196F3" /> Wholesaler
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo("admin")}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: "flex-start", gap: "6px", fontSize: "12px", padding: "7px 10px" }}
-                >
-                  <ShieldCheck size={15} color="#F44336" /> Admin Demo
-                </button>
-              </div>
-            </div>
-          )}
+
 
           {/* Error Banner */}
           {error && (

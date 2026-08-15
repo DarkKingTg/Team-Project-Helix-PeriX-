@@ -30,7 +30,7 @@ interface OrderTransfer {
   commodity: string;
   quantityKg: number;
   totalAmount: number;
-  escrowStatus: "funds_locked" | "in_transit" | "delivered" | "completed" | "cancelled";
+  escrowStatus: "funds_locked" | "in_transit" | "delivered" | "completed" | "cancelled" | string;
   routeDistanceKm: number;
   expectedDelivery: string;
   createdAt: string;
@@ -182,25 +182,45 @@ export default function OrdersPage() {
     return () => unsubscribe();
   }, [storageKey, user, profile]);
 
-  const filteredOrders = filter === "all" ? orders : orders.filter((o) => o.escrowStatus === filter);
-
-  const getStatusBadge = (status: OrderTransfer["escrowStatus"]) => {
-    switch (status) {
+  const getStatusBadge = (status?: string) => {
+    const s = String(status || "").toLowerCase().trim();
+    switch (s) {
       case "funds_locked":
+      case "pending":
+      case "created":
+      case "locked":
         return { label: t("orders.escrowLocked", "Funds in Escrow"), bg: "rgba(255,152,0,0.18)", text: "#E65100" };
       case "in_transit":
+      case "dispatched":
+      case "transit":
         return { label: t("orders.inTransit", "In Reefer Transit"), bg: "rgba(33,150,243,0.18)", text: "#1565C0" };
       case "delivered":
         return { label: t("orders.delivered", "Delivered (Pending QC)"), bg: "rgba(156,39,176,0.18)", text: "#7B1FA2" };
       case "completed":
+      case "released":
         return { label: t("orders.completed", "Escrow Released"), bg: "rgba(76,175,80,0.18)", text: "#2E7D32" };
       case "cancelled":
+      case "rejected":
         return { label: t("common.rejected", "Consignment Rejected"), bg: "rgba(244,67,54,0.18)", text: "#D32F2F" };
+      default:
+        return { label: status ? String(status).toUpperCase() : t("orders.escrowLocked", "Active Escrow"), bg: "rgba(33,150,243,0.18)", text: "#1565C0" };
     }
   };
 
+  const filteredOrders = filter === "all"
+    ? orders
+    : orders.filter((o) => {
+        if (!o) return false;
+        const s = String(o.escrowStatus || "").toLowerCase();
+        if (filter === "funds_locked") return s === "funds_locked" || s === "pending" || s === "created" || s === "locked";
+        if (filter === "in_transit") return s === "in_transit" || s === "dispatched" || s === "transit";
+        if (filter === "cancelled") return s === "cancelled" || s === "rejected";
+        return s === filter.toLowerCase();
+      });
+
   const handleUpdateStatus = async (id: string, newStatus: OrderTransfer["escrowStatus"]) => {
-    const updated = orders.map((o) => (o.id === id ? { ...o, escrowStatus: newStatus } : o));
+    if (!id) return;
+    const updated = orders.map((o) => (o.id === id || o.orderNumber === id ? { ...o, escrowStatus: newStatus } : o));
     setOrders(updated);
 
     // Save to Firestore
@@ -278,14 +298,25 @@ export default function OrdersPage() {
       {filteredOrders.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} className="stagger-children">
           {filteredOrders.map((ord, idx) => {
-            const badge = getStatusBadge(ord.escrowStatus);
+            const statusKey: string = String(ord?.escrowStatus || "funds_locked");
+            const badge = getStatusBadge(statusKey);
+            const totalAmt = Number(ord?.totalAmount ?? (ord as any)?.amount ?? 0) || 0;
+            const qtyKg = Number(ord?.quantityKg ?? (ord as any)?.quantity ?? (ord as any)?.quantity_kg ?? 0) || 0;
+            const ratePerKg = qtyKg > 0 ? (totalAmt / qtyKg).toFixed(1) : "0.0";
+            const orderNum = ord?.orderNumber || (ord as any)?.order_number || ord?.id || `PO-${idx + 1001}`;
+            const sender = ord?.senderNode || (ord as any)?.sender || "Origin Dispatch Node";
+            const receiver = ord?.receiverNode || (ord as any)?.receiver || "Destination Receiving Node";
+            const distance = Number(ord?.routeDistanceKm ?? (ord as any)?.distance ?? 25) || 25;
+            const expDelivery = ord?.expectedDelivery || (ord as any)?.deliveryDate || new Date().toISOString().split("T")[0];
+            const initiated = ord?.createdAt || (ord as any)?.date || new Date().toISOString().split("T")[0];
+
             return (
-              <div key={`${ord.id || ord.orderNumber}-${idx}`} className="card" style={{ padding: "20px" }}>
+              <div key={`${ord?.id || orderNum}-${idx}`} className="card" style={{ padding: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", marginBottom: "14px" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
-                        {ord.orderNumber}
+                        {orderNum}
                       </span>
                       <span
                         style={{
@@ -301,9 +332,9 @@ export default function OrdersPage() {
                       </span>
                     </div>
                     <p style={{ fontSize: "12px", color: "var(--text-tertiary)", marginTop: "2px" }}>
-                      {t("orders.createdAt", "Initiated")}: {ord.createdAt}
+                      {t("orders.createdAt", "Initiated")}: {initiated}
                     </p>
-                    {ord.note && (
+                    {ord?.note && (
                       <p style={{ fontSize: "12px", color: "var(--error)", marginTop: "4px", fontWeight: "600" }}>
                         ⚠️ {ord.note}
                       </p>
@@ -312,10 +343,10 @@ export default function OrdersPage() {
 
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--primary)" }}>
-                      ₹{ord.totalAmount.toLocaleString()}
+                      ₹{totalAmt.toLocaleString()}
                     </div>
                     <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                      {ord.quantityKg.toLocaleString()} {t("common.kg", "kg")} @ ₹{(ord.totalAmount / ord.quantityKg).toFixed(1)}/kg
+                      {qtyKg.toLocaleString()} {t("common.kg", "kg")} @ ₹{ratePerKg}/kg
                     </p>
                   </div>
                 </div>
@@ -335,45 +366,45 @@ export default function OrdersPage() {
                 >
                   <div>
                     <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>{t("orders.senderNode", "Origin Dispatch")}</p>
-                    <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{ord.senderNode}</p>
+                    <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{sender}</p>
                   </div>
                   <div style={{ color: "var(--primary)", display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <Truck size={18} />
-                    <span style={{ fontSize: "10px", fontWeight: "600" }}>{ord.routeDistanceKm} km</span>
+                    <span style={{ fontSize: "10px", fontWeight: "600" }}>{distance} km</span>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <p style={{ fontSize: "11px", color: "var(--text-tertiary)", textTransform: "uppercase" }}>{t("orders.receiverNode", "Destination Receiving")}</p>
-                    <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{ord.receiverNode}</p>
+                    <p style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{receiver}</p>
                   </div>
                 </div>
 
                 {/* Order Actions */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                    {t("orders.expectedDelivery", "Expected Delivery")}: <strong>{ord.expectedDelivery}</strong>
+                    {t("orders.expectedDelivery", "Expected Delivery")}: <strong>{expDelivery}</strong>
                   </span>
 
                   <div style={{ display: "flex", gap: "8px" }}>
-                    {ord.escrowStatus === "funds_locked" && (
+                    {(statusKey === "funds_locked" || statusKey === "pending" || statusKey === "created") && (
                       <button
                         className="btn btn-primary btn-sm"
-                        onClick={() => handleUpdateStatus(ord.id, "in_transit")}
+                        onClick={() => handleUpdateStatus(ord?.id || orderNum, "in_transit")}
                       >
                         {t("orders.inTransit", "Dispatch Reefer Fleet")}
                       </button>
                     )}
-                    {ord.escrowStatus === "in_transit" && (
+                    {(statusKey === "in_transit" || statusKey === "dispatched") && (
                       <button
                         className="btn btn-primary btn-sm"
-                        onClick={() => handleUpdateStatus(ord.id, "delivered")}
+                        onClick={() => handleUpdateStatus(ord?.id || orderNum, "delivered")}
                       >
                         {t("orders.delivered", "Confirm Gateway Delivery")}
                       </button>
                     )}
-                    {ord.escrowStatus === "delivered" && (
+                    {statusKey === "delivered" && (
                       <button
                         className="btn btn-success btn-sm"
-                        onClick={() => handleUpdateStatus(ord.id, "completed")}
+                        onClick={() => handleUpdateStatus(ord?.id || orderNum, "completed")}
                       >
                         {t("orders.completed", "Release Escrow Funds")}
                       </button>

@@ -11,6 +11,7 @@ export class AppController {
   }
 
   @Get('health')
+  @Get('api/v1/health')
   getHealth() {
     return {
       status: 'ok',

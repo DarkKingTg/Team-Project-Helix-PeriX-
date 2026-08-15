@@ -299,38 +299,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const cleanEmail = email.trim().toLowerCase();
-
-    // Instant Persona Demo Credential Matching
-    if (cleanEmail.includes("farmer")) {
-      loginAsDemo("farmer");
-      return;
-    }
-    if (cleanEmail.includes("mandi")) {
-      loginAsDemo("mandi");
-      return;
-    }
-    if (cleanEmail.includes("wholesaler") || cleanEmail.includes("agro") || cleanEmail.includes("distrib")) {
-      loginAsDemo("wholesaler");
-      return;
-    }
-    if (cleanEmail.includes("retail") || cleanEmail.includes("freshmart") || cleanEmail.includes("pos")) {
-      loginAsDemo("wholesaler");
-      return;
-    }
-    if (cleanEmail.includes("admin")) {
-      loginAsDemo("admin");
-      return;
+    // Clear any previous demo role session
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("perix_demo_role");
     }
 
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const existingProfile = await fetchProfile(result.user);
+    const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+    setUser(result.user);
+    const existingProfile = await fetchProfile(result.user);
+    if (existingProfile) {
       setProfile(existingProfile);
-    } catch (err: any) {
-      console.warn("Email login fallback to demo profile on error:", err);
-      // Auto-fallback if Firebase credential check fails or is unconfigured
-      loginAsDemo("farmer");
+    } else {
+      // Fallback: create a basic profile in Firestore if none exists yet
+      const newProf = await createProfile(result.user, "farmer", result.user.displayName || "");
+      setProfile(newProf);
     }
   };
 
@@ -346,51 +328,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("perix_demo_role");
     }
 
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+    const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    if (name) {
       await updateProfile(result.user, { displayName: name });
-      const newProfile = await createProfile(result.user, role, name, {
-        ...extraData,
-        isDemo: false,
-        isEmailVerified: true,
-      });
-      setUser(result.user);
-      setProfile(newProfile);
-      return newProfile;
-    } catch (err: any) {
-      console.warn("Firebase createUserWithEmailAndPassword notice:", err);
-      // Create authenticated profile if Firebase Auth is in offline mode
-      const standaloneUid = `usr-${Date.now()}`;
-      const standaloneProfile: UserProfile = {
-        uid: standaloneUid,
-        email: email.trim().toLowerCase(),
-        displayName: name || "Registered User",
-        role,
-        isDemo: false,
-        isEmailVerified: true,
-        language: "en",
-        ...extraData,
-      };
-
-      try {
-        await setDoc(doc(db, "users", standaloneUid), {
-          ...standaloneProfile,
-          createdAt: serverTimestamp(),
-        }, { merge: true });
-      } catch (e) {
-        console.warn("Firestore standalone save notice:", e);
-      }
-
-      const mockUser = {
-        uid: standaloneUid,
-        email: email.trim().toLowerCase(),
-        displayName: name,
-      } as unknown as User;
-
-      setUser(mockUser);
-      setProfile(standaloneProfile);
-      return standaloneProfile;
     }
+    const newProfile = await createProfile(result.user, role, name, {
+      ...extraData,
+      isDemo: false,
+      isEmailVerified: true,
+    });
+    setUser(result.user);
+    setProfile(newProfile);
+    return newProfile;
   };
 
   const signOut = async () => {

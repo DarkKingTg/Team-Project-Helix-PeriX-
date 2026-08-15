@@ -100,7 +100,30 @@ Used for farmer, mandi, wholesaler, and retailer login and cloud batch syncing. 
 
 ---
 
-## 4.  Verification: How to Test Live API Ingestion
+## 4. 📧 Real OTP Email Verification (Gmail SMTP / Nodemailer)
+
+PeriX uses **real OTP email verification** when users create an account. A 6-digit numeric verification code is sent directly to the user's Gmail/email address.
+
+### How to set up Gmail App Password (Takes 1 minute):
+1. Go to your Google Account Security settings: **[https://myaccount.google.com/security](https://myaccount.google.com/security)**
+2. Make sure **2-Step Verification** is turned ON.
+3. Search for **"App passwords"** in the top search bar (or go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)).
+4. Create a new App Name (e.g. `PeriX App`) and click **Create**.
+5. Google will generate a **16-character password** (e.g. `abcd efgh ijkl mnop`).
+6. Copy this 16-character password into **`backend/.env`**:
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USER=your_email@gmail.com
+   SMTP_PASS=abcdefghijklmnop
+   SMTP_FROM="PeriX Platform" <no-reply@perix.in>
+   ```
+
+*(You can also use any other SMTP service like SendGrid, Resend, Amazon SES, or Mailgun by providing your custom `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_PASS`.)*
+
+---
+
+## 5. 🧪 Verification: How to Test Live API Ingestion & Real OTP
 
 After pasting your keys into the `.env` files:
 

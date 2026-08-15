@@ -175,7 +175,6 @@ export default function LoginPage() {
 
   // OTP Verification State
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   // Update district options when state changes
@@ -227,16 +226,7 @@ export default function LoginPage() {
       setLoading(true);
       setError("");
       await signInWithEmail(loginEmail, loginPassword);
-      const targetRole = loginEmail.includes("farmer")
-        ? "farmer"
-        : loginEmail.includes("mandi")
-        ? "mandi"
-        : loginEmail.includes("wholesaler")
-        ? "wholesaler"
-        : loginEmail.includes("admin")
-        ? "admin"
-        : profile?.role || "farmer";
-      router.push(getDashboardRouteForRole(targetRole as UserRole));
+      router.push(getDashboardRouteForRole(profile?.role || "farmer"));
     } catch (err: unknown) {
       setError(formatAuthError(err));
     } finally {
@@ -264,10 +254,7 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const res = await apiClient.auth.sendOtp(signupEmail, signupName, selectedRole);
-      if (res.devOtp) {
-        setDevOtpHint(res.devOtp);
-      }
+      await apiClient.auth.sendOtp(signupEmail, signupName, selectedRole);
       setResendCooldown(60);
       setRegStep("otp-verify");
     } catch (err: any) {
@@ -282,10 +269,7 @@ export default function LoginPage() {
     setError("");
     try {
       setLoading(true);
-      const res = await apiClient.auth.sendOtp(signupEmail, signupName, selectedRole);
-      if (res.devOtp) {
-        setDevOtpHint(res.devOtp);
-      }
+      await apiClient.auth.sendOtp(signupEmail, signupName, selectedRole);
       setResendCooldown(60);
     } catch (err: any) {
       setError(err.message || "Failed to resend verification code.");
@@ -380,6 +364,22 @@ export default function LoginPage() {
     if (e.key === "Backspace" && !otpCode[index] && index > 0) {
       const prevInput = document.getElementById(`otp-input-${index - 1}`);
       prevInput?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    if (pasted.length > 0) {
+      const digits = pasted.split("");
+      const newOtp = ["", "", "", "", "", ""];
+      digits.forEach((d, i) => {
+        if (i < 6) newOtp[i] = d;
+      });
+      setOtpCode(newOtp);
+      const focusIndex = Math.min(digits.length, 5);
+      const targetInput = document.getElementById(`otp-input-${focusIndex}`);
+      targetInput?.focus();
     }
   };
 
@@ -545,7 +545,6 @@ export default function LoginPage() {
                 setSignupName("");
                 setSignupPhone("");
                 setOtpCode(["", "", "", "", "", ""]);
-                setDevOtpHint(null);
                 setFarmerData({ villageTaluk: "", farmSizeAcres: "", primaryCrops: [], upiId: "" });
                 setMandiData({ warehouseName: "", licenseNumber: "", facilityAddress: "", storageCapacityTonnes: "", storageTypes: [] });
                 setWholesalerData({ companyName: "", gstinNumber: "", distributionHubCity: "", fleetTypes: [], retailChannels: [] });
@@ -737,7 +736,7 @@ export default function LoginPage() {
                   Select Your Supply Chain Role
                 </h3>
                 <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "4px" }}>
-                  Step 1 of 3: Choose the persona that matches your operation.
+                  Step 1 of 3: Choose the role that matches your operation.
                 </p>
               </div>
 
@@ -809,7 +808,7 @@ export default function LoginPage() {
                 className="btn btn-primary btn-lg"
                 style={{ width: "100%", gap: "8px" }}
               >
-                Continue to Persona Details <ArrowRight size={18} />
+                Continue to Account Details <ArrowRight size={18} />
               </button>
             </div>
           )}
@@ -846,36 +845,42 @@ export default function LoginPage() {
                 {/* 1. Core Account Credentials */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                    <label htmlFor="signup-name" style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
                       {selectedRole === "farmer" ? "Farmer Full Name" : selectedRole === "mandi" ? "Operator / Agent Name" : "Authorized Person"} *
                     </label>
                     <div style={{ position: "relative" }}>
                       <User size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
                       <input
+                        id="signup-name"
+                        name="signup_name"
                         type="text"
+                        autoComplete="off"
                         className="input"
                         style={{ paddingLeft: "34px", fontSize: "13px" }}
-                        placeholder="e.g. Ramesh Patel"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Enter your full name"
+                        value={signupName}
+                        onChange={(e) => setSignupName(e.target.value)}
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                    <label htmlFor="signup-phone" style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
                       Phone / WhatsApp Number *
                     </label>
                     <div style={{ position: "relative" }}>
                       <Phone size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
                       <input
+                        id="signup-phone"
+                        name="signup_phone"
                         type="tel"
+                        autoComplete="off"
                         className="input"
                         style={{ paddingLeft: "34px", fontSize: "13px" }}
                         placeholder="e.g. 9876543210"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        value={signupPhone}
+                        onChange={(e) => setSignupPhone(e.target.value)}
                         required
                       />
                     </div>
@@ -884,36 +889,42 @@ export default function LoginPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "12px", marginBottom: "14px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                    <label htmlFor="signup-email" style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
                       Gmail / Email Address (for OTP Verification) *
                     </label>
                     <div style={{ position: "relative" }}>
                       <Mail size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
                       <input
+                        id="signup-email"
+                        name="signup_email"
                         type="email"
+                        autoComplete="off"
                         className="input"
                         style={{ paddingLeft: "34px", fontSize: "13px" }}
                         placeholder="yourname@gmail.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                    <label htmlFor="signup-password" style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
                       Password *
                     </label>
                     <div style={{ position: "relative" }}>
                       <Lock size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
                       <input
+                        id="signup-password"
+                        name="signup_password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         className="input"
                         style={{ paddingLeft: "34px", paddingRight: "34px", fontSize: "13px" }}
                         placeholder="Min 6 chars"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
                         required
                         minLength={6}
                       />
@@ -1235,40 +1246,28 @@ export default function LoginPage() {
                   A 6-digit verification code was dispatched to:
                 </p>
                 <div style={{ fontWeight: "700", color: "var(--primary-dark)", fontSize: "14px", marginTop: "2px" }}>
-                  {email}
+                  {signupEmail}
                 </div>
               </div>
 
-              {/* Dev Quick Hint for Instant Testing */}
-              {devOtpHint && (
-                <div
-                  style={{
-                    background: "rgba(33,150,243,0.08)",
-                    border: "1px dashed #2196F3",
-                    borderRadius: "10px",
-                    padding: "10px 14px",
-                    marginBottom: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                    🔑 Verification Code: <strong style={{ color: "#1565C0", fontSize: "15px", letterSpacing: "1px" }}>{devOtpHint}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const digits = devOtpHint.split("");
-                      setOtpCode(digits);
-                    }}
-                    className="btn btn-primary btn-sm"
-                    style={{ fontSize: "11px", padding: "4px 8px" }}
-                  >
-                    Auto-Fill
-                  </button>
+              {/* Real Email Verification Status Banner */}
+              <div
+                style={{
+                  background: "rgba(15, 118, 110, 0.08)",
+                  border: "1px solid rgba(15, 118, 110, 0.25)",
+                  borderRadius: "10px",
+                  padding: "12px 14px",
+                  marginBottom: "20px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                }}
+              >
+                <Mail size={18} color="#0F766E" style={{ marginTop: "2px", flexShrink: 0 }} />
+                <div style={{ fontSize: "13px", color: "#0F766E", lineHeight: "1.5" }}>
+                  <strong>Real OTP Sent</strong>: Check your email inbox or spam folder for your 6-digit verification code.
                 </div>
-              )}
+              </div>
 
               <form onSubmit={handleVerifyOtpAndCreateAccount}>
                 {/* 6 Digit Numeric Boxes */}
@@ -1283,6 +1282,7 @@ export default function LoginPage() {
                       value={digit}
                       onChange={(e) => handleOtpInput(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      onPaste={handleOtpPaste}
                       style={{
                         width: "48px",
                         height: "54px",

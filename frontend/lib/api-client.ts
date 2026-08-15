@@ -327,57 +327,31 @@ export const apiClient = {
       };
     },
   },
-  // Auth & OTP API
+  // Auth & OTP API (Real Email Verification)
   auth: {
     async sendOtp(email: string, name?: string, role?: string) {
-      try {
-        const res = await fetch(`${getApiBaseUrl()}/auth/send-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, name, role }),
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || `HTTP ${res.status}`);
-        }
-        return await res.json();
-      } catch (err: any) {
-        console.warn("Backend /auth/send-otp fallback:", err);
-        // Instant reliable fallback OTP for offline/direct client testing
-        const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(`perix_otp_${email.trim().toLowerCase()}`, fallbackOtp);
-        }
-        return {
-          success: true,
-          message: `Verification code sent to ${email}`,
-          devOtp: fallbackOtp,
-        };
+      const res = await fetch(`${getApiBaseUrl()}/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, role }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || `Failed to send verification email (HTTP ${res.status})`);
       }
+      return await res.json();
     },
     async verifyOtp(email: string, otp: string) {
-      try {
-        const res = await fetch(`${getApiBaseUrl()}/auth/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, otp }),
-        });
-        if (res.ok) {
-          return await res.json();
-        }
+      const res = await fetch(`${getApiBaseUrl()}/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || `HTTP ${res.status}`);
-      } catch (err: any) {
-        console.warn("Backend /auth/verify-otp fallback check:", err);
-        if (typeof window !== "undefined") {
-          const stored = sessionStorage.getItem(`perix_otp_${email.trim().toLowerCase()}`);
-          if (stored && stored === otp.trim()) {
-            sessionStorage.removeItem(`perix_otp_${email.trim().toLowerCase()}`);
-            return { success: true, verified: true, message: "Email verified successfully" };
-          }
-        }
-        throw new Error(err.message || "Invalid or expired OTP code.");
+        throw new Error(errData.message || "Invalid or expired OTP verification code.");
       }
+      return await res.json();
     },
   },
 };

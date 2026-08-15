@@ -7,7 +7,7 @@ Transforming India's Post-Harvest Food Spoilage Crisis into Recovered Revenue
 
 | Service Component | Hosting Platform | Production URL | Health Status Endpoint |
 |---|---|---|---|
-| Web Application (Frontend) | Vercel | [team-project-helix-perix.vercel.app](https://team-project-helix-peri-8ppkdtoin-darkkingtgs-projects.vercel.app) | Production Active (Next.js 16) |
+| Web Application (Frontend) | Vercel | [team-project-helix-perix.vercel.app](https://team-project-helix-peri-x-lovat.vercel.app/) | Production Active (Next.js 16) |
 | Backend API Microservice | Render | [team-project-helix-perix.onrender.com](https://team-project-helix-perix.onrender.com) | [/health](https://team-project-helix-perix.onrender.com/health) |
 | 10-Layer AI ML Microservice | Render | [team-project-helix-perix-2.onrender.com](https://team-project-helix-perix-2.onrender.com) | [/api/health](https://team-project-helix-perix-2.onrender.com/api/health) |
 

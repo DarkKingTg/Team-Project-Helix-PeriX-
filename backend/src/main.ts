@@ -21,8 +21,8 @@ async function bootstrap() {
     }),
   );
 
-  // Global prefix
-  app.setGlobalPrefix('api/v1');
+  // Global prefix with health check exclusion for cloud pingers
+  app.setGlobalPrefix('api/v1', { exclude: ['', '/', 'health'] });
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');

@@ -7,6 +7,7 @@ import {
   Sprout,
   Store,
   Truck,
+  Zap,
   ShoppingCart,
   Search,
   CheckCircle2,
@@ -23,89 +24,80 @@ import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n-context";
 
 interface UserRecord {
-  id: string;
-  name: string;
+  uid: string;
+  displayName: string;
   email: string;
   role: UserRole;
   location: string;
-  activeItemsCount: number;
-  totalVolumeTonnes: number;
-  joinedDate: string;
-  status: "verified" | "pending";
-}
-
-function formatLocation(loc: unknown): string {
-  if (!loc) return "Coimbatore, Tamil Nadu";
-  if (typeof loc === "string") return loc.trim() || "Coimbatore, Tamil Nadu";
-  if (typeof loc === "object" && loc !== null) {
-    const obj = loc as Record<string, unknown>;
-    const parts = [obj.district || obj.city || obj.name, obj.state].filter(Boolean);
-    return parts.length > 0 ? parts.join(", ") : "Coimbatore, Tamil Nadu";
-  }
-  return String(loc);
+  isDemo?: boolean;
+  createdAt?: any;
 }
 
 export default function UsersManagementPage() {
+  const router = useRouter();
   const { user, profile, switchRole } = useAuth();
   const { t } = useI18n();
-  const router = useRouter();
-  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [usersList, setUsersList] = useState<UserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
 
   useEffect(() => {
-    // 1. Fetch live registered users from Firestore
+    let isMounted = true;
     try {
       const q = query(collection(db, "users"));
       const unsubscribe = onSnapshot(
         q,
         (snapshot) => {
-          if (!snapshot.empty) {
-            const dbUsers = snapshot.docs.map((d) => {
-              const data = d.data();
-              return {
-                id: d.id,
-                name: String(data.displayName || data.name || "Participant Node"),
-                email: String(data.email || "node@perix.in"),
-                role: (data.role || "farmer") as UserRole,
-                location: formatLocation(data.location),
-                activeItemsCount: Number(data.activeItemsCount || 0),
-                totalVolumeTonnes: Number(data.totalVolumeTonnes || 0),
-                joinedDate: data.createdAt ? "Registered" : "Active",
-                status: "verified",
-              } as UserRecord;
-            });
-            setUsers(dbUsers);
-          } else if (profile) {
-            // Show current logged-in user profile as the verified participant
-            setUsers([
-              {
-                id: profile.uid || "usr-current",
-                name: String(profile.displayName || "Active Administrator"),
-                email: String(profile.email || "admin@perix.in"),
-                role: (profile.role || "admin") as UserRole,
-                location: formatLocation(profile.location),
-                activeItemsCount: 0,
-                totalVolumeTonnes: 0,
-                joinedDate: "Today",
-                status: "verified",
-              },
-            ]);
+          if (isMounted) {
+            if (!snapshot.empty) {
+              const uData: UserRecord[] = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                  uid: doc.id,
+                  displayName: data.displayName || data.name || "Participant Node",
+                  email: data.email || "node@perix.in",
+                  role: (data.role || "farmer") as UserRole,
+                  location: data.district ? `${data.district}, ${data.state}` : (data.location?.district ? `${data.location.district}, ${data.location.state}` : "Tamil Nadu, India"),
+                  isDemo: data.isDemo || false,
+                  createdAt: data.createdAt,
+                };
+              });
+              setUsersList(uData);
+            } else {
+              // Fallback to active current user
+              if (profile) {
+                setUsersList([
+                  {
+                    uid: user?.uid || "current-node",
+                    displayName: profile.displayName || "System Administrator",
+                    email: profile.email || "admin@perix.in",
+                    role: (profile.role || "admin") as UserRole,
+                    location: `${profile.district || "Chennai"}, ${profile.state || "Tamil Nadu"}`,
+                    isDemo: profile.isDemo || false,
+                  },
+                ]);
+              }
+            }
+            setLoading(false);
           }
         },
-        (err) => {
-          console.warn("Firestore users query notice:", err.message);
+        () => {
+          if (isMounted) setLoading(false);
         }
       );
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("Firestore setup notice:", e);
+      return () => {
+        isMounted = false;
+        unsubscribe();
+      };
+    } catch {
+      if (isMounted) setLoading(false);
     }
-  }, [profile]);
+  }, [profile, user]);
 
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = usersList.filter((u) => {
     const matchesSearch =
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === "all" || u.role === filterRole;
@@ -120,6 +112,8 @@ export default function UsersManagementPage() {
         return <Store size={16} color="#FF9800" />;
       case "wholesaler":
         return <Truck size={16} color="#2196F3" />;
+      case "retailer":
+        return <Zap size={16} color="#9C27B0" />;
       case "admin":
         return <ShieldCheck size={16} color="#F44336" />;
       default:
@@ -129,7 +123,11 @@ export default function UsersManagementPage() {
 
   const handleInspectAsRole = (role: UserRole) => {
     switchRole(role);
-    router.push("/dashboard");
+    if (role === "farmer") router.push("/dashboard/crops");
+    else if (role === "mandi") router.push("/dashboard/inventory");
+    else if (role === "wholesaler") router.push("/dashboard/wholesaler");
+    else if (role === "retailer") router.push("/dashboard/pricing");
+    else router.push("/dashboard");
   };
 
   return (
@@ -164,7 +162,7 @@ export default function UsersManagementPage() {
         </div>
 
         <div style={{ display: "flex", gap: "8px", overflowX: "auto" }}>
-          {["all", "farmer", "mandi", "wholesaler", "admin"].map((r) => (
+          {["all", "farmer", "mandi", "wholesaler", "retailer", "admin"].map((r) => (
             <button
               key={r}
               onClick={() => setFilterRole(r)}
@@ -206,10 +204,10 @@ export default function UsersManagementPage() {
             </thead>
             <tbody>
               {filteredUsers.map((u) => (
-                <tr key={u.id}>
+                <tr key={u.uid}>
                   <td>
                     <div>
-                      <span style={{ fontWeight: "600", color: "var(--text-primary)", display: "block" }}>{u.name}</span>
+                      <span style={{ fontWeight: "600", color: "var(--text-primary)", display: "block" }}>{u.displayName}</span>
                       <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{u.email}</span>
                     </div>
                   </td>
@@ -225,10 +223,10 @@ export default function UsersManagementPage() {
                       {u.location}
                     </div>
                   </td>
-                  <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{u.joinedDate}</td>
+                  <td style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{u.createdAt ? "Registered" : "Active Node"}</td>
                   <td>
                     <span className="badge badge-success">
-                      <CheckCircle2 size={12} /> {u.status}
+                      <CheckCircle2 size={12} /> Verified Node
                     </span>
                   </td>
                   <td>

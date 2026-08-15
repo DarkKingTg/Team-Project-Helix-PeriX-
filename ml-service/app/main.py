@@ -36,10 +36,12 @@ app.include_router(advisor.router, prefix="/api", tags=["Smart AI Advisory"])
 
 
 @app.get("/")
+@app.get("/health")
+@app.get("/api/health")
 async def root():
     return {
         "service": "PeriX 10-Layer AI Pipeline",
-        "status": "running",
+        "status": "healthy",
         "version": "2.0.0",
         "layers": [
             "1. Data Collection",

@@ -24,6 +24,13 @@ import {
   Cpu,
   CheckCircle2,
   Sparkles,
+  Sprout,
+  Truck,
+  Zap,
+  Users,
+  Layers,
+  ShieldCheck,
+  Building2,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { AICopilotModal } from "@/components/ai-copilot-modal";
@@ -37,7 +44,7 @@ interface NavConfigItem {
 const roleNavConfigs: Record<UserRole, NavConfigItem[]> = {
   farmer: [
     { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { id: "crops", icon: Package, href: "/dashboard/crops" },
+    { id: "crops", icon: Sprout, href: "/dashboard/crops" },
     { id: "market", icon: BarChart3, href: "/dashboard/market" },
     { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
     { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
@@ -54,19 +61,36 @@ const roleNavConfigs: Record<UserRole, NavConfigItem[]> = {
   ],
   wholesaler: [
     { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { id: "wholesalerHub", icon: Package, href: "/dashboard/wholesaler" },
+    { id: "wholesalerHub", icon: Truck, href: "/dashboard/wholesaler" },
+    { id: "distribution", icon: Layers, href: "/dashboard/distribution" },
     { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
     { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
     { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
     { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
-
+  retailer: [
+    { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { id: "pricing", icon: Zap, href: "/dashboard/pricing" },
+    { id: "marketplace", icon: Store, href: "/dashboard/marketplace" },
+    { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
+    { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+    { id: "settings", icon: Settings, href: "/dashboard/settings" },
+  ],
   admin: [
     { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { id: "users", icon: Package, href: "/dashboard/users" },
-    { id: "inventory", icon: Store, href: "/dashboard/inventory" },
+    { id: "crops", icon: Sprout, href: "/dashboard/crops" },
+    { id: "inventory", icon: Package, href: "/dashboard/inventory" },
+    { id: "wholesalerHub", icon: Truck, href: "/dashboard/wholesaler" },
+    { id: "pricing", icon: Zap, href: "/dashboard/pricing" },
+    { id: "marketplace", icon: Store, href: "/dashboard/marketplace" },
+    { id: "distribution", icon: Layers, href: "/dashboard/distribution" },
+    { id: "market", icon: BarChart3, href: "/dashboard/market" },
+    { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
     { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
+    { id: "pipeline", icon: Cpu, href: "/dashboard/pipeline" },
     { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
+    { id: "users", icon: Users, href: "/dashboard/users" },
     { id: "settings", icon: Settings, href: "/dashboard/settings" },
   ],
 };
@@ -75,6 +99,7 @@ const roleColors: Record<UserRole, string> = {
   farmer: "#4CAF50",
   mandi: "#FF9800",
   wholesaler: "#2196F3",
+  retailer: "#9C27B0",
   admin: "#F44336",
 };
 
@@ -141,18 +166,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const getNavLabel = (id: string) => {
     switch (id) {
       case "dashboard": return t("nav.dashboard", "Dashboard");
-      case "crops": return t("nav.crops", "My Crops");
+      case "crops": return t("nav.crops", "Farmer Crops");
       case "market": return t("nav.market", "Market Prices");
       case "aiAdvisor": return t("nav.aiAdvisor", "AI Agent Predictions");
-      case "pipeline": return t("nav.aiAdvisor", "AI Agent Predictions");
-      case "orders": return t("nav.orders", "Orders");
+      case "pipeline": return t("nav.pipeline", "ML Model Retraining");
+      case "orders": return t("nav.orders", "Live Orders & Escrow");
       case "inventory": return t("nav.inventory", "Warehouse Inventory");
       case "wholesalerHub": return t("nav.wholesaler", "Wholesale Hub");
       case "marketplace": return t("nav.marketplace", "Marketplace");
-      case "distribution": return t("nav.distribution", "Distribution");
-      case "pricing": return t("nav.pricing", "Dynamic Pricing");
-      case "analytics": return t("nav.analytics", "Analytics");
-      case "users": return t("nav.users", "Users");
+      case "distribution": return t("nav.distribution", "Distribution Routes");
+      case "pricing": return t("nav.pricing", "Retailer POS Pricing");
+      case "analytics": return t("nav.analytics", "Network Analytics");
+      case "users": return t("nav.users", "User Registry");
       case "settings": return t("nav.settings", "Settings");
       default: return id;
     }
@@ -585,7 +610,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     >
                       Switch Role View
                     </div>
-                    {(["farmer", "mandi", "wholesaler", "admin"] as UserRole[]).map((r) => {
+                    {([
+                      { role: "admin" as UserRole, path: "/dashboard", label: "Master Admin NOC" },
+                      { role: "farmer" as UserRole, path: "/dashboard/crops", label: "1. Farmer Portal" },
+                      { role: "mandi" as UserRole, path: "/dashboard/inventory", label: "2. Mandi / Warehouse" },
+                      { role: "wholesaler" as UserRole, path: "/dashboard/wholesaler", label: "3. Wholesaler Logistics" },
+                      { role: "retailer" as UserRole, path: "/dashboard/pricing", label: "4. Retailer POS Pricing" },
+                    ]).map(({ role: r, path, label }) => {
                       const isCurrent = role === r;
                       return (
                         <button
@@ -593,10 +624,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           onClick={() => {
                             switchRole(r);
                             setRoleDropdownOpen(false);
-                            if (r === "farmer") router.push("/dashboard/crops");
-                            else if (r === "mandi") router.push("/dashboard/inventory");
-                            else if (r === "wholesaler") router.push("/dashboard/wholesaler");
-                            else router.push("/dashboard");
+                            router.push(path);
                           }}
                           style={{
                             width: "100%",
@@ -615,7 +643,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             marginBottom: "2px",
                           }}
                         >
-                          <span>{getRoleLabel(r)}</span>
+                          <div>
+                            <div>{getRoleLabel(r)}</div>
+                            <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>{label}</div>
+                          </div>
                           {isCurrent && <CheckCircle2 size={16} color={roleColors[r]} />}
                         </button>
                       );
@@ -643,7 +674,96 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Content area */}
-        <div style={{ padding: "24px" }}>{children}</div>
+        <div style={{ padding: "24px" }}>
+          {/* Universal Admin Persona Command Strip */}
+          {role === "admin" && (
+            <div
+              style={{
+                background: "linear-gradient(135deg, rgba(244,67,54,0.08), rgba(33,150,243,0.06))",
+                border: "1px solid rgba(244,67,54,0.25)",
+                borderRadius: "14px",
+                padding: "12px 18px",
+                marginBottom: "22px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "12px",
+              }}
+              className="animate-fade-in"
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "8px",
+                    background: "rgba(244,67,54,0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ShieldCheck size={18} color="#F44336" />
+                </div>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)" }}>
+                    Admin Universal 4-Persona View Controller
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                    Cross-tier superuser access enabled for all supply chain tiers
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className={`btn btn-xs ${pathname === "/dashboard" ? "btn-primary" : "btn-secondary"}`}
+                  style={{ fontSize: "11px", gap: "4px" }}
+                >
+                  <LayoutDashboard size={13} /> Master NOC
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/crops")}
+                  className={`btn btn-xs ${pathname === "/dashboard/crops" ? "btn-primary" : "btn-secondary"}`}
+                  style={{ fontSize: "11px", gap: "4px", borderColor: "#4CAF50" }}
+                >
+                  <Sprout size={13} color="#4CAF50" /> 1. Farmer Crops
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/inventory")}
+                  className={`btn btn-xs ${pathname === "/dashboard/inventory" ? "btn-primary" : "btn-secondary"}`}
+                  style={{ fontSize: "11px", gap: "4px", borderColor: "#FF9800" }}
+                >
+                  <Store size={13} color="#FF9800" /> 2. Mandi Storage
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/wholesaler")}
+                  className={`btn btn-xs ${pathname === "/dashboard/wholesaler" ? "btn-primary" : "btn-secondary"}`}
+                  style={{ fontSize: "11px", gap: "4px", borderColor: "#2196F3" }}
+                >
+                  <Truck size={13} color="#2196F3" /> 3. Wholesaler Hub
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/pricing")}
+                  className={`btn btn-xs ${pathname === "/dashboard/pricing" ? "btn-primary" : "btn-secondary"}`}
+                  style={{ fontSize: "11px", gap: "4px", borderColor: "#9C27B0" }}
+                >
+                  <Zap size={13} color="#9C27B0" /> 4. Retailer POS
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/users")}
+                  className={`btn btn-xs ${pathname === "/dashboard/users" ? "btn-primary" : "btn-secondary"}`}
+                  style={{ fontSize: "11px", gap: "4px" }}
+                >
+                  <Users size={13} /> User Registry
+                </button>
+              </div>
+            </div>
+          )}
+          {children}
+        </div>
       </main>
 
       {/* AI Copilot Modal */}

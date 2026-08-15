@@ -25,6 +25,7 @@ import {
   Building2,
   Package,
   ThermometerSnowflake,
+  Zap,
 } from "lucide-react";
 
 const LANGUAGES: { code: Locale; name: string; native: string }[] = [
@@ -43,6 +44,7 @@ const ROLES: { role: UserRole; icon: typeof Sprout; color: string }[] = [
   { role: "farmer", icon: Sprout, color: "#4CAF50" },
   { role: "mandi", icon: Store, color: "#FF9800" },
   { role: "wholesaler", icon: Truck, color: "#2196F3" },
+  { role: "retailer", icon: Zap, color: "#9C27B0" },
   { role: "admin", icon: ShieldCheck, color: "#F44336" },
 ];
 

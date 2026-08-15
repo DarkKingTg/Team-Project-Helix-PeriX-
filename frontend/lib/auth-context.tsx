@@ -15,7 +15,7 @@ import {
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 
-export type UserRole = "farmer" | "mandi" | "wholesaler" | "admin";
+export type UserRole = "farmer" | "mandi" | "wholesaler" | "retailer" | "admin";
 
 export interface UserProfile {
   uid: string;
@@ -131,11 +131,24 @@ const DEMO_PROFILES: Record<UserRole, UserProfile> = {
     language: "en",
     isDemo: true,
   },
-
+  retailer: {
+    uid: "demo-retailer-001",
+    email: "nilgiris.retail@perix.in",
+    displayName: "Nilgiris Fresh POS & Retail Hub",
+    companyName: "Nilgiris Fresh Supermarkets Pvt. Ltd.",
+    role: "retailer",
+    state: "Tamil Nadu",
+    district: "Coimbatore",
+    distributionHubCity: "Coimbatore City Store #104",
+    gstinNumber: "33AAFCN9876Q1Z2",
+    location: { state: "Tamil Nadu", district: "Coimbatore" },
+    language: "en",
+    isDemo: true,
+  },
   admin: {
-    uid: "demo-admin-001",
+    uid: "yWCDktI44nUyCJu85KyjC900ATo2",
     email: "admin@perix.in",
-    displayName: "System Administrator",
+    displayName: "System Administrator (Master Admin)",
     role: "admin",
     state: "Tamil Nadu",
     district: "Chennai",

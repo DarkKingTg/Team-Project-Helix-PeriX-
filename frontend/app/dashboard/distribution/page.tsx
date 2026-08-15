@@ -18,6 +18,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n-context";
+import {
+  saveDocument,
+  updateDocument,
+  deleteDocument,
+  subscribeCollection,
+} from "@/lib/firestore-helpers";
 
 interface DeliveryRoute {
   id: string;
@@ -30,6 +36,7 @@ interface DeliveryRoute {
   coldChainTempC: number;
   status: "in_transit" | "scheduled" | "completed";
   stops: string[];
+  userId?: string;
 }
 
 export default function DistributionPage() {
@@ -42,6 +49,7 @@ export default function DistributionPage() {
 
   const storageKey = `perix_distribution_routes_${user?.uid || "global"}`;
 
+  // 1. Initial Load from LocalStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
@@ -58,6 +66,32 @@ export default function DistributionPage() {
     }
   }, [storageKey]);
 
+  // 2. Real-time Firestore sync for distribution_routes
+  useEffect(() => {
+    const unsubscribe = subscribeCollection<DeliveryRoute>("distribution_routes", (dbRoutes) => {
+      if (dbRoutes && dbRoutes.length > 0) {
+        setRoutes((prev) => {
+          const map = new Map<string, DeliveryRoute>();
+          prev.forEach((r) => {
+            if (r.id) map.set(r.id, r);
+          });
+          dbRoutes.forEach((r) => {
+            if (r.id) map.set(r.id, { ...(map.get(r.id) || {}), ...r });
+          });
+          const merged = Array.from(map.values());
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(merged));
+            } catch {}
+          }
+          return merged;
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [storageKey]);
+
   const [form, setForm] = useState({
     vehicleNo: "TN-38-BZ-4109 (Reefer 3.5T)",
     driverName: "Karthik Raja",
@@ -66,7 +100,7 @@ export default function DistributionPage() {
     stops: "Tiruppur Hub, Avinashi Supermarket, Coimbatore Central",
   });
 
-  const handleAddRoute = (e: React.FormEvent) => {
+  const handleAddRoute = async (e: React.FormEvent) => {
     e.preventDefault();
     const stopsList = form.stops.split(",").map((s) => s.trim()).filter(Boolean);
     const newRoute: DeliveryRoute = {
@@ -80,10 +114,19 @@ export default function DistributionPage() {
       coldChainTempC: Number(form.coldChainTempC),
       status: "scheduled",
       stops: stopsList,
+      userId: user?.uid,
     };
 
     const updated = [newRoute, ...routes];
     setRoutes(updated);
+
+    // Save to Firestore
+    try {
+      await saveDocument("distribution_routes", newRoute.id, newRoute);
+    } catch (err) {
+      console.warn("Firestore distribution route save notice:", err);
+    }
+
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -94,9 +137,17 @@ export default function DistributionPage() {
     setShowModal(false);
   };
 
-  const handleDeleteRoute = (id: string) => {
+  const handleDeleteRoute = async (id: string) => {
     const updated = routes.filter((r) => r.id !== id);
     setRoutes(updated);
+
+    // Delete from Firestore
+    try {
+      await deleteDocument("distribution_routes", id);
+    } catch (err) {
+      console.warn("Firestore distribution route delete notice:", err);
+    }
+
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));

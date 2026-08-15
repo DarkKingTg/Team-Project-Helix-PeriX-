@@ -109,12 +109,19 @@ export class PredictionsService {
 
   // Stored predictions from Firestore
   async getStoredPredictions(commodity?: string) {
-    let q: any = this.firebaseService.collection('predictions');
-    if (commodity) {
-      q = q.where('commodity', '==', commodity);
+    try {
+      let q: any = this.firebaseService.collection('predictions');
+      if (commodity) {
+        q = q.where('commodity', '==', commodity);
+      }
+      const snapshot = await q.orderBy('generatedAt', 'desc').limit(20).get();
+      if (snapshot && snapshot.docs) {
+        return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+      }
+    } catch (e) {
+      console.warn('Firestore getStoredPredictions fallback:', e);
     }
-    const snapshot = await q.orderBy('generatedAt', 'desc').limit(20).get();
-    return snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    return [];
   }
 
   private async getFallbackPredictions(commodity: string, state: string) {

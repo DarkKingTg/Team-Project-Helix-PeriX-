@@ -5,6 +5,8 @@ import {
   User,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -147,6 +149,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Handle Google redirect result (for signInWithRedirect flow)
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user) {
+          setUser(result.user);
+          const existingProfile = await fetchProfile(result.user);
+          if (existingProfile) {
+            setProfile(existingProfile);
+          } else {
+            // New user from Google redirect — create a profile
+            const newProfile = await createProfile(result.user, "farmer", result.user.displayName || "");
+            setProfile(newProfile);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("getRedirectResult error (non-fatal):", err);
+      });
+
     try {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         setUser(firebaseUser);
@@ -186,16 +207,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      // Try popup first (works when OAuth redirect URIs are properly configured)
       const result = await signInWithPopup(auth, googleProvider);
       const existingProfile = await fetchProfile(result.user);
-      if (!existingProfile) {
-        setProfile(null);
-      } else {
+      if (existingProfile) {
         setProfile(existingProfile);
+      } else {
+        // New Google user — auto-create farmer profile
+        const newProfile = await createProfile(result.user, "farmer", result.user.displayName || "");
+        setProfile(newProfile);
       }
-    } catch (err) {
-      console.error("Google login failed, falling back to demo mode:", err);
-      loginAsDemo("farmer");
+    } catch (popupErr: any) {
+      // If popup was blocked or closed, try full-page redirect flow
+      if (
+        popupErr?.code === "auth/popup-closed-by-user" ||
+        popupErr?.code === "auth/popup-blocked" ||
+        popupErr?.code === "auth/cancelled-popup-request" ||
+        popupErr?.code === "auth/unauthorized-domain"
+      ) {
+        console.warn("Popup failed, trying redirect flow:", popupErr.code);
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          // Page will redirect to Google and come back — result handled in useEffect above
+        } catch (redirectErr) {
+          console.error("Redirect flow also failed, falling back to demo:", redirectErr);
+          loginAsDemo("farmer");
+        }
+      } else {
+        console.error("Google login failed, falling back to demo mode:", popupErr);
+        loginAsDemo("farmer");
+      }
     }
   };
 

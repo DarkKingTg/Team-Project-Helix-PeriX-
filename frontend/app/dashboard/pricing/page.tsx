@@ -24,6 +24,12 @@ import {
   Sun,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n-context";
+import {
+  saveDocument,
+  updateDocument,
+  deleteDocument,
+  subscribeCollection,
+} from "@/lib/firestore-helpers";
 
 interface MarkdownItem {
   id: string;
@@ -38,6 +44,7 @@ interface MarkdownItem {
   urgency: "critical" | "high" | "moderate" | "low";
   posStatus: "synced" | "pending_push";
   reasoning: string;
+  userId?: string;
 }
 
 const COMMODITY_OPTIONS = [
@@ -55,6 +62,7 @@ export default function DynamicPricingPage() {
 
   const storageKey = `perix_pricing_markdowns_${user?.uid || "global"}`;
 
+  // 1. Initial Load from LocalStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
@@ -69,6 +77,32 @@ export default function DynamicPricingPage() {
         console.warn("Pricing cache read error:", err);
       }
     }
+  }, [storageKey]);
+
+  // 2. Real-time Firestore sync for pricing_markdowns
+  useEffect(() => {
+    const unsubscribe = subscribeCollection<MarkdownItem>("pricing_markdowns", (dbItems) => {
+      if (dbItems && dbItems.length > 0) {
+        setItems((prev) => {
+          const map = new Map<string, MarkdownItem>();
+          prev.forEach((i) => {
+            if (i.id) map.set(i.id, i);
+          });
+          dbItems.forEach((i) => {
+            if (i.id) map.set(i.id, { ...(map.get(i.id) || {}), ...i });
+          });
+          const merged = Array.from(map.values());
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(merged));
+            } catch {}
+          }
+          return merged;
+        });
+      }
+    });
+
+    return () => unsubscribe();
   }, [storageKey]);
 
   // Dynamic Calculator State with Hours and Temperature
@@ -158,7 +192,7 @@ export default function DynamicPricingPage() {
     return () => clearTimeout(timer);
   }, [runDynamicCalc]);
 
-  const handleAddCalculatedToQueue = () => {
+  const handleAddCalculatedToQueue = async () => {
     if (!calcResult) return;
     const newItem: MarkdownItem = {
       id: `md-${Date.now()}`,
@@ -173,10 +207,19 @@ export default function DynamicPricingPage() {
       urgency: (calcResult.urgency as "critical" | "high" | "moderate" | "low") || "moderate",
       posStatus: "pending_push",
       reasoning: calcResult.reasoning,
+      userId: user?.uid,
     };
 
     const updated = [newItem, ...items];
     setItems(updated);
+
+    // Save to Firestore
+    try {
+      await saveDocument("pricing_markdowns", newItem.id, newItem);
+    } catch (err) {
+      console.warn("Firestore pricing save notice:", err);
+    }
+
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -186,9 +229,17 @@ export default function DynamicPricingPage() {
     }
   };
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     const updated = items.filter((i) => i.id !== id);
     setItems(updated);
+
+    // Delete from Firestore
+    try {
+      await deleteDocument("pricing_markdowns", id);
+    } catch (err) {
+      console.warn("Firestore pricing delete notice:", err);
+    }
+
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
@@ -198,8 +249,19 @@ export default function DynamicPricingPage() {
     }
   };
 
-  const handlePushToPOS = () => {
+  const handlePushToPOS = async () => {
     setPushStatus("Syncing markdown rules to connected POS terminal gateways...");
+
+    // Update in Firestore
+    try {
+      const updatePromises = items.map((i) =>
+        updateDocument("pricing_markdowns", i.id, { posStatus: "synced" })
+      );
+      await Promise.all(updatePromises);
+    } catch (err) {
+      console.warn("Firestore POS sync notice:", err);
+    }
+
     setTimeout(() => {
       const updated = items.map((i) => ({ ...i, posStatus: "synced" as const }));
       setItems(updated);
@@ -212,7 +274,7 @@ export default function DynamicPricingPage() {
       }
       setPushStatus("All dynamic markdown rules successfully pushed to POS scanners.");
       setTimeout(() => setPushStatus(null), 5000);
-    }, 1200);
+    }, 800);
   };
 
   return (

@@ -54,8 +54,7 @@ const roleNavConfigs: Record<UserRole, NavConfigItem[]> = {
   ],
   wholesaler: [
     { id: "dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { id: "inventory", icon: Package, href: "/dashboard/inventory" },
-    { id: "distribution", icon: Store, href: "/dashboard/distribution" },
+    { id: "wholesalerHub", icon: Package, href: "/dashboard/wholesaler" },
     { id: "aiAdvisor", icon: Sparkles, href: "/dashboard/ai-advisor" },
     { id: "orders", icon: ShoppingCart, href: "/dashboard/orders" },
     { id: "analytics", icon: BarChart3, href: "/dashboard/analytics" },
@@ -147,7 +146,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       case "aiAdvisor": return t("nav.aiAdvisor", "AI Agent Predictions");
       case "pipeline": return t("nav.aiAdvisor", "AI Agent Predictions");
       case "orders": return t("nav.orders", "Orders");
-      case "inventory": return t("nav.inventory", "Inventory");
+      case "inventory": return t("nav.inventory", "Warehouse Inventory");
+      case "wholesalerHub": return t("nav.wholesaler", "Wholesale Hub");
       case "marketplace": return t("nav.marketplace", "Marketplace");
       case "distribution": return t("nav.distribution", "Distribution");
       case "pricing": return t("nav.pricing", "Dynamic Pricing");
@@ -593,6 +593,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           onClick={() => {
                             switchRole(r);
                             setRoleDropdownOpen(false);
+                            if (r === "farmer") router.push("/dashboard/crops");
+                            else if (r === "mandi") router.push("/dashboard/inventory");
+                            else if (r === "wholesaler") router.push("/dashboard/wholesaler");
+                            else router.push("/dashboard");
                           }}
                           style={{
                             width: "100%",

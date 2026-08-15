@@ -101,7 +101,7 @@ function getDashboardRouteForRole(role?: UserRole | string | null): string {
     case "mandi":
       return "/dashboard/inventory";
     case "wholesaler":
-      return "/dashboard/distribution";
+      return "/dashboard/inventory";
     case "admin":
       return "/dashboard";
     default:

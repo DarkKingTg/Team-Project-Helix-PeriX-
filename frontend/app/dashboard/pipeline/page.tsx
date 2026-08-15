@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "@/lib/api-client";
 import {
   Sparkles,
@@ -26,6 +26,20 @@ const COMMODITIES = [
   "Tomato", "Potato", "Onion", "Wheat", "Rice", "Banana",
   "Mango", "Green Chilli", "Garlic", "Ginger", "Turmeric"
 ];
+
+const BASE_COMMODITY_PRICES: Record<string, number> = {
+  Tomato: 34.0,
+  Potato: 23.5,
+  Onion: 36.0,
+  "Green Chilli": 110.0,
+  Wheat: 31.0,
+  Rice: 42.0,
+  Banana: 44.0,
+  Mango: 72.0,
+  Garlic: 175.0,
+  Ginger: 88.0,
+  Turmeric: 102.0,
+};
 
 export default function AIPipelineDashboardPage() {
   const { t } = useI18n();
@@ -129,6 +143,10 @@ export default function AIPipelineDashboardPage() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    handleRunPipeline();
+  }, []);
+
   const handleRetrain = async () => {
     setRetraining(true);
     const res = await apiClient.pipeline.triggerRetrain();
@@ -214,7 +232,6 @@ export default function AIPipelineDashboardPage() {
               <option value="farmer">{t("roles.farmer", "Farmer")}</option>
               <option value="mandi">{t("roles.mandi", "Mandi Agent")}</option>
               <option value="wholesaler">{t("roles.wholesaler", "Wholesaler")}</option>
-              <option value="retailer">{t("roles.retailer", "Retailer")}</option>
             </select>
           </div>
 
@@ -225,7 +242,11 @@ export default function AIPipelineDashboardPage() {
             <select
               className="input"
               value={inputData.commodity}
-              onChange={(e) => setInputData({ ...inputData, commodity: e.target.value })}
+              onChange={(e) => {
+                const comm = e.target.value;
+                const newPrice = BASE_COMMODITY_PRICES[comm] || 34.0;
+                setInputData({ ...inputData, commodity: comm, current_price_kg: newPrice });
+              }}
             >
               {COMMODITIES.map((c) => (
                 <option key={c} value={c}>{c}</option>

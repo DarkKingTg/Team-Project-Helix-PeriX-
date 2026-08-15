@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname, ".."),
   },
+  async rewrites() {
+    return [
+      {
+        source: "/__/auth/:path*",
+        destination: "https://perix-4936c.firebaseapp.com/__/auth/:path*",
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

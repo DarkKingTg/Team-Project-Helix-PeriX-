@@ -298,12 +298,22 @@ export const apiClient = {
       }
       return null;
     },
-    async chat(message: string, language: string = "en", role: string = "farmer") {
+    async chat(
+      message: string,
+      language: string = "en",
+      role: string = "farmer",
+      conversationHistory?: Array<{ sender: string; text: string }>
+    ) {
       try {
         const res = await fetch(`${getMlBaseUrl()}/advisor/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, language, persona_role: role }),
+          body: JSON.stringify({
+            message,
+            language,
+            persona_role: role,
+            conversation_history: conversationHistory,
+          }),
         });
         if (res.ok) return await res.json();
       } catch (err) {
@@ -313,6 +323,7 @@ export const apiClient = {
         reply: "PeriX AI Copilot: Based on official Agmarknet records, Tomato modal rate in Coimbatore is Rs 34.00/kg with an upward price trajectory (+6.0%).",
         language,
         persona_role: role,
+        provider: "fallback",
       };
     },
   },

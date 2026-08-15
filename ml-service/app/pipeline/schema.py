@@ -56,6 +56,9 @@ class PipelineEvaluationResult(BaseModel):
     predicted_mandi_price: float
     predicted_demand_kg: float
     forecast_confidence: float
+    price_change_pct: Optional[float] = None
+    price_trend: Optional[str] = None
+    price_trajectory: Optional[List[Dict[str, Any]]] = None
 
     # Layer 6: Waste Risk Engine
     expected_waste_kg: float

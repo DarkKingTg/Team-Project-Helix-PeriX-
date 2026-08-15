@@ -34,6 +34,17 @@ interface UserRecord {
   status: "verified" | "pending";
 }
 
+function formatLocation(loc: unknown): string {
+  if (!loc) return "Coimbatore, Tamil Nadu";
+  if (typeof loc === "string") return loc.trim() || "Coimbatore, Tamil Nadu";
+  if (typeof loc === "object" && loc !== null) {
+    const obj = loc as Record<string, unknown>;
+    const parts = [obj.district || obj.city || obj.name, obj.state].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "Coimbatore, Tamil Nadu";
+  }
+  return String(loc);
+}
+
 export default function UsersManagementPage() {
   const { user, profile, switchRole } = useAuth();
   const { t } = useI18n();
@@ -54,12 +65,12 @@ export default function UsersManagementPage() {
               const data = d.data();
               return {
                 id: d.id,
-                name: data.displayName || data.name || "Participant Node",
-                email: data.email || "node@perix.in",
-                role: data.role || "farmer",
-                location: data.location || "Coimbatore, Tamil Nadu",
-                activeItemsCount: data.activeItemsCount || 0,
-                totalVolumeTonnes: data.totalVolumeTonnes || 0,
+                name: String(data.displayName || data.name || "Participant Node"),
+                email: String(data.email || "node@perix.in"),
+                role: (data.role || "farmer") as UserRole,
+                location: formatLocation(data.location),
+                activeItemsCount: Number(data.activeItemsCount || 0),
+                totalVolumeTonnes: Number(data.totalVolumeTonnes || 0),
                 joinedDate: data.createdAt ? "Registered" : "Active",
                 status: "verified",
               } as UserRecord;
@@ -70,12 +81,10 @@ export default function UsersManagementPage() {
             setUsers([
               {
                 id: profile.uid || "usr-current",
-                name: profile.displayName || "Active Administrator",
-                email: profile.email || "admin@perix.in",
-                role: profile.role || "admin",
-                location: typeof profile.location === "object" && profile.location !== null
-                  ? `${profile.location.district || ""}, ${profile.location.state || ""}`
-                  : String(profile.location || "Tamil Nadu Regional Mesh"),
+                name: String(profile.displayName || "Active Administrator"),
+                email: String(profile.email || "admin@perix.in"),
+                role: (profile.role || "admin") as UserRole,
+                location: formatLocation(profile.location),
                 activeItemsCount: 0,
                 totalVolumeTonnes: 0,
                 joinedDate: "Today",

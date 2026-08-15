@@ -253,18 +253,18 @@ export default function LoginPage() {
       setError("Please provide a valid Gmail address.");
       return;
     }
-    if (password.length < 6) {
+    if (signupPassword.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
-    if (!name.trim()) {
+    if (!signupName.trim()) {
       setError("Please enter your name / authorized representative name.");
       return;
     }
 
     try {
       setLoading(true);
-      const res = await apiClient.auth.sendOtp(email, name, selectedRole);
+      const res = await apiClient.auth.sendOtp(signupEmail, signupName, selectedRole);
       if (res.devOtp) {
         setDevOtpHint(res.devOtp);
       }
@@ -282,7 +282,7 @@ export default function LoginPage() {
     setError("");
     try {
       setLoading(true);
-      const res = await apiClient.auth.sendOtp(email, name, selectedRole);
+      const res = await apiClient.auth.sendOtp(signupEmail, signupName, selectedRole);
       if (res.devOtp) {
         setDevOtpHint(res.devOtp);
       }
@@ -308,11 +308,11 @@ export default function LoginPage() {
       setError("");
 
       // 1. Verify OTP with Backend / Local Verification Engine
-      await apiClient.auth.verifyOtp(email, enteredOtp);
+      await apiClient.auth.verifyOtp(signupEmail, enteredOtp);
 
       // 2. Assemble Detailed Persona Profile Metadata
       let extraProfileData: Partial<UserProfile> = {
-        phone,
+        phone: signupPhone,
         state: selectedState,
         district: selectedDistrict,
         location: {
@@ -325,9 +325,9 @@ export default function LoginPage() {
         extraProfileData = {
           ...extraProfileData,
           villageTaluk: farmerData.villageTaluk,
-          farmSizeAcres: Number(farmerData.farmSizeAcres),
+          farmSizeAcres: Number(farmerData.farmSizeAcres || 0),
           primaryCrops: farmerData.primaryCrops,
-          upiId: farmerData.upiId || `${phone || "farmer"}@okhdfcbank`,
+          upiId: farmerData.upiId || `${signupPhone || "farmer"}@okhdfcbank`,
         };
       } else if (selectedRole === "mandi") {
         extraProfileData = {
@@ -335,8 +335,8 @@ export default function LoginPage() {
           warehouseName: mandiData.warehouseName,
           licenseNumber: mandiData.licenseNumber,
           facilityAddress: mandiData.facilityAddress,
-          storageCapacityTonnes: Number(mandiData.storageCapacityTonnes),
-          availableCapacityTonnes: Number(mandiData.storageCapacityTonnes),
+          storageCapacityTonnes: Number(mandiData.storageCapacityTonnes || 0),
+          availableCapacityTonnes: Number(mandiData.storageCapacityTonnes || 0),
           hasColdStorage: true,
           storageTypes: mandiData.storageTypes,
         };
@@ -352,7 +352,7 @@ export default function LoginPage() {
       }
 
       // 3. Register Account with Zero Mock Data guarantee
-      await signUpWithEmail(email, password, name, selectedRole, extraProfileData);
+      await signUpWithEmail(signupEmail, signupPassword, signupName, selectedRole, extraProfileData);
 
       // 4. Route directly to Role Dashboard
       router.push(getDashboardRouteForRole(selectedRole));
@@ -539,6 +539,16 @@ export default function LoginPage() {
                 setMode("register");
                 setRegStep("role-select");
                 setError("");
+                // Clear any auto-filled or pre-existing credentials for a clean new registration
+                setSignupEmail("");
+                setSignupPassword("");
+                setSignupName("");
+                setSignupPhone("");
+                setOtpCode(["", "", "", "", "", ""]);
+                setDevOtpHint(null);
+                setFarmerData({ villageTaluk: "", farmSizeAcres: "", primaryCrops: [], upiId: "" });
+                setMandiData({ warehouseName: "", licenseNumber: "", facilityAddress: "", storageCapacityTonnes: "", storageTypes: [] });
+                setWholesalerData({ companyName: "", gstinNumber: "", distributionHubCity: "", fleetTypes: [], retailChannels: [] });
               }}
               style={{
                 flex: 1,
@@ -553,7 +563,7 @@ export default function LoginPage() {
                 color: mode === "register" ? "white" : "var(--text-secondary)",
               }}
             >
-              New Persona Registration
+              Sign Up
             </button>
           </div>
 
@@ -662,36 +672,42 @@ export default function LoginPage() {
 
               <form onSubmit={handleEmailLogin}>
                 <div style={{ marginBottom: "14px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
+                  <label htmlFor="login-email" style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
                     Email Address
                   </label>
                   <div style={{ position: "relative" }}>
                     <Mail size={18} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
                     <input
+                      id="login-email"
+                      name="login_email"
                       type="email"
+                      autoComplete="email"
                       className="input"
                       style={{ paddingLeft: "40px" }}
                       placeholder="farmer@perix.in"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
                       required
                     />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
+                  <label htmlFor="login-password" style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
                     Password
                   </label>
                   <div style={{ position: "relative" }}>
                     <Lock size={18} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
                     <input
+                      id="login-password"
+                      name="login_password"
                       type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
                       className="input"
                       style={{ paddingLeft: "40px", paddingRight: "40px" }}
                       placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
                       required
                     />
                     <button

@@ -23,22 +23,41 @@ export interface UserProfile {
   displayName: string;
   role: UserRole;
   phone?: string;
-  warehouseName?: string;
-  facilityAddress?: string;
-  storageCapacityTonnes?: number;
-  availableCapacityTonnes?: number;
-  hasColdStorage?: boolean;
-  contactPerson?: string;
+  // Location details
+  state?: string;
+  district?: string;
   location?: {
     state: string;
     district: string;
     lat?: number;
     lng?: number;
   };
+  // Farmer-specific details
+  villageTaluk?: string;
+  farmSizeAcres?: number;
+  primaryCrops?: string[];
+  upiId?: string;
+  // Mandi / Warehouse-specific details
+  warehouseName?: string;
+  licenseNumber?: string;
+  facilityAddress?: string;
+  storageCapacityTonnes?: number;
+  availableCapacityTonnes?: number;
+  storageTypes?: string[];
+  hasColdStorage?: boolean;
+  contactPerson?: string;
+  // Wholesaler-specific details
+  companyName?: string;
+  gstinNumber?: string;
+  distributionHubCity?: string;
+  fleetTypes?: string[];
+  retailChannels?: string[];
+
   language: string;
   photoURL?: string;
   createdAt?: unknown;
   isDemo?: boolean;
+  isEmailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -47,7 +66,13 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole,
+    extraData?: Partial<UserProfile>
+  ) => Promise<UserProfile | null>;
   loginAsDemo: (role: UserRole) => void;
   signOut: () => Promise<void>;
   updateUserRole: (role: UserRole) => Promise<void>;
@@ -63,6 +88,12 @@ const DEMO_PROFILES: Record<UserRole, UserProfile> = {
     email: "ramesh.farmer@perix.in",
     displayName: "Ramesh Patel (Farmer)",
     role: "farmer",
+    state: "Tamil Nadu",
+    district: "Coimbatore",
+    villageTaluk: "Pollachi Taluk",
+    farmSizeAcres: 4.5,
+    primaryCrops: ["Tomato", "Banana", "Green Chilli"],
+    upiId: "ramesh.patel@okhdfcbank",
     location: { state: "Tamil Nadu", district: "Coimbatore" },
     language: "en",
     isDemo: true,
@@ -72,6 +103,14 @@ const DEMO_PROFILES: Record<UserRole, UserProfile> = {
     email: "coimbatore.mandi@perix.in",
     displayName: "Kovai APMC Mandi Agent",
     role: "mandi",
+    warehouseName: "Kovai Agro Hub & Cold Storage",
+    facilityAddress: "APMC Market Yard Complex, Mettupalayam Rd, Coimbatore",
+    licenseNumber: "APMC-TN-CBE-2024-883",
+    state: "Tamil Nadu",
+    district: "Coimbatore",
+    storageCapacityTonnes: 1200,
+    hasColdStorage: true,
+    storageTypes: ["Cold Storage", "Controlled Atmosphere"],
     location: { state: "Tamil Nadu", district: "Coimbatore" },
     language: "en",
     isDemo: true,
@@ -80,7 +119,14 @@ const DEMO_PROFILES: Record<UserRole, UserProfile> = {
     uid: "demo-wholesaler-001",
     email: "southagro.wholesaler@perix.in",
     displayName: "Apex Agro Wholesalers",
+    companyName: "Apex Agro Distribution Hub Ltd.",
     role: "wholesaler",
+    state: "Tamil Nadu",
+    district: "Tiruppur",
+    distributionHubCity: "Tiruppur Central Logistics Depot",
+    gstinNumber: "33AABCA1234F1Z5",
+    fleetTypes: ["Reefer Van 3.5T", "Insulated Truck 10T"],
+    retailChannels: ["Supermarket Chains", "Hypermarkets", "Dark Stores"],
     location: { state: "Tamil Nadu", district: "Tiruppur" },
     language: "en",
     isDemo: true,
@@ -91,6 +137,8 @@ const DEMO_PROFILES: Record<UserRole, UserProfile> = {
     email: "admin@perix.in",
     displayName: "System Administrator",
     role: "admin",
+    state: "Tamil Nadu",
+    district: "Chennai",
     language: "en",
     isDemo: true,
   },
@@ -119,18 +167,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const createProfile = async (
     firebaseUser: User,
     role: UserRole = "farmer",
-    name?: string
+    name?: string,
+    extraData?: Partial<UserProfile>
   ): Promise<UserProfile> => {
     const profileData: Omit<UserProfile, "uid"> = {
       email: firebaseUser.email || "",
       displayName: name || firebaseUser.displayName || "",
       role,
-      language: "en",
+      state: extraData?.state || "Tamil Nadu",
+      district: extraData?.district || "Coimbatore",
+      location: {
+        state: extraData?.state || "Tamil Nadu",
+        district: extraData?.district || "Coimbatore",
+      },
+      language: extraData?.language || "en",
       photoURL: firebaseUser.photoURL || "",
+      isDemo: false,
+      isEmailVerified: true,
       createdAt: serverTimestamp(),
+      ...extraData,
     };
     try {
-      await setDoc(doc(db, "users", firebaseUser.uid), profileData);
+      await setDoc(doc(db, "users", firebaseUser.uid), profileData, { merge: true });
     } catch (err) {
       console.warn("Could not save profile to Firestore:", err);
     }
@@ -276,15 +334,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUpWithEmail = async (email: string, password: string, name: string, role: UserRole) => {
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole,
+    extraData?: Partial<UserProfile>
+  ): Promise<UserProfile | null> => {
+    // Clear demo session if any
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("perix_demo_role");
+    }
+
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(result.user, { displayName: name });
-      const newProfile = await createProfile(result.user, role, name);
+      const newProfile = await createProfile(result.user, role, name, {
+        ...extraData,
+        isDemo: false,
+        isEmailVerified: true,
+      });
+      setUser(result.user);
       setProfile(newProfile);
+      return newProfile;
     } catch (err: any) {
-      console.warn("Signup fallback to demo profile on error:", err);
-      loginAsDemo(role);
+      console.warn("Firebase createUserWithEmailAndPassword notice:", err);
+      // Create authenticated profile if Firebase Auth is in offline mode
+      const standaloneUid = `usr-${Date.now()}`;
+      const standaloneProfile: UserProfile = {
+        uid: standaloneUid,
+        email: email.trim().toLowerCase(),
+        displayName: name || "Registered User",
+        role,
+        isDemo: false,
+        isEmailVerified: true,
+        language: "en",
+        ...extraData,
+      };
+
+      try {
+        await setDoc(doc(db, "users", standaloneUid), {
+          ...standaloneProfile,
+          createdAt: serverTimestamp(),
+        }, { merge: true });
+      } catch (e) {
+        console.warn("Firestore standalone save notice:", e);
+      }
+
+      const mockUser = {
+        uid: standaloneUid,
+        email: email.trim().toLowerCase(),
+        displayName: name,
+      } as unknown as User;
+
+      setUser(mockUser);
+      setProfile(standaloneProfile);
+      return standaloneProfile;
     }
   };
 

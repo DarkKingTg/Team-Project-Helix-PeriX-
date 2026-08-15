@@ -48,7 +48,7 @@ const ROLES: { role: UserRole; icon: typeof Sprout; color: string }[] = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { profile, switchRole, updateUserProfile } = useAuth();
+  const { user, profile, switchRole, updateUserProfile } = useAuth();
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useI18n();
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -62,15 +62,15 @@ export default function SettingsPage() {
   };
 
   const [profileForm, setProfileForm] = useState({
-    displayName: profile?.displayName || "Supply Chain Partner",
-    contactPerson: profile?.contactPerson || profile?.displayName || "Facility Manager",
-    phone: profile?.phone || "+91 98421 77320",
-    warehouseName: profile?.warehouseName || (profile?.role === "wholesaler" ? "Central Wholesale Reefer Depot" : "APMC Aggregation Hub"),
-    facilityAddress: profile?.facilityAddress || "Plot 42, Agro Logistics Corridor, Coimbatore, Tamil Nadu",
-    storageCapacityTonnes: profile?.storageCapacityTonnes || 500,
-    availableCapacityTonnes: profile?.availableCapacityTonnes || 180,
+    displayName: profile?.displayName || user?.displayName || "",
+    contactPerson: profile?.contactPerson || profile?.displayName || user?.displayName || "",
+    phone: profile?.phone || "",
+    warehouseName: profile?.warehouseName || (isWarehousePersonnel ? (profile?.role === "wholesaler" ? "Central Wholesale Depot" : "APMC Aggregation Hub") : ""),
+    facilityAddress: profile?.facilityAddress || "",
+    storageCapacityTonnes: profile?.storageCapacityTonnes || (isWarehousePersonnel ? 100 : 0),
+    availableCapacityTonnes: profile?.availableCapacityTonnes || (isWarehousePersonnel ? 100 : 0),
     hasColdStorage: profile?.hasColdStorage ?? true,
-    email: profile?.email || "partner@perix.in",
+    email: profile?.email || user?.email || "",
     state: profile?.location?.state || "Tamil Nadu",
     district: profile?.location?.district || "Coimbatore",
   });
@@ -79,20 +79,20 @@ export default function SettingsPage() {
     if (profile) {
       setProfileForm((prev) => ({
         ...prev,
-        displayName: profile.displayName || prev.displayName,
-        contactPerson: profile.contactPerson || profile.displayName || prev.contactPerson,
-        phone: profile.phone || prev.phone,
-        warehouseName: profile.warehouseName || prev.warehouseName,
-        facilityAddress: profile.facilityAddress || prev.facilityAddress,
-        storageCapacityTonnes: profile.storageCapacityTonnes || prev.storageCapacityTonnes,
-        availableCapacityTonnes: profile.availableCapacityTonnes || prev.availableCapacityTonnes,
+        displayName: profile.displayName || user?.displayName || prev.displayName,
+        contactPerson: profile.contactPerson || profile.displayName || user?.displayName || prev.contactPerson,
+        phone: profile.phone ?? prev.phone,
+        warehouseName: profile.warehouseName ?? prev.warehouseName,
+        facilityAddress: profile.facilityAddress ?? prev.facilityAddress,
+        storageCapacityTonnes: profile.storageCapacityTonnes ?? prev.storageCapacityTonnes,
+        availableCapacityTonnes: profile.availableCapacityTonnes ?? prev.availableCapacityTonnes,
         hasColdStorage: profile.hasColdStorage ?? prev.hasColdStorage,
-        email: profile.email || prev.email,
+        email: profile.email || user?.email || prev.email,
         state: profile.location?.state || prev.state,
         district: profile.location?.district || prev.district,
       }));
     }
-  }, [profile]);
+  }, [profile, user]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();

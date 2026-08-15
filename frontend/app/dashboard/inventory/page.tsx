@@ -148,7 +148,6 @@ export default function InventoryPage() {
     if (typeof window !== "undefined") {
       try {
         const cached = localStorage.getItem(storageKey);
-        const inwardFeed = localStorage.getItem("perix_wh_inward_feed");
         let initialItems: InventoryItem[] = [];
         const existingIds = new Set<string>();
 
@@ -164,117 +163,125 @@ export default function InventoryPage() {
           }
         }
 
-        if (inwardFeed) {
-          const parsedInward = JSON.parse(inwardFeed);
-          if (Array.isArray(parsedInward)) {
-            parsedInward.forEach((i) => {
-              if (i && i.id && !existingIds.has(i.id)) {
-                existingIds.add(i.id);
-                initialItems.unshift({
-                  ...i,
-                  isImmutableIntake: true,
-                });
-              }
-            });
-          }
-        }
-
-        // Also check any logged farmer crops
-        ["perix_crops_" + (user?.uid || "farmer"), "perix_crops_farmer", "perix_crops_global"].forEach((cropKey) => {
-          const cachedCrops = localStorage.getItem(cropKey);
-          if (cachedCrops) {
-            const parsedCrops = JSON.parse(cachedCrops);
-            if (Array.isArray(parsedCrops)) {
-              parsedCrops.forEach((c) => {
-                const givenKg = Number(c.goodsGivenToWarehouseKg ?? c.quantity ?? 0);
-                if (givenKg > 0) {
-                  const inwardId = `inv-crop-${c.id}`;
-                  if (!existingIds.has(inwardId)) {
-                    existingIds.add(inwardId);
-                    const cropInventoryItem: InventoryItem = {
-                      id: inwardId,
-                      commodity: c.name,
-                      quantity: givenKg,
-                      qualityGrade: c.qualityGrade || "A - Premium",
-                      buyPrice: Number(c.procurementPricePerKg || 34.0),
-                      sellPrice: Math.round(Number(c.procurementPricePerKg || 34.0) * 1.15),
-                      storageType: c.storageType || "cold_storage",
-                      coldChain: c.storageType === "cold_storage",
-                      expiryDays: c.storageType === "cold_storage" ? 14 : 7,
-                      sourceFarmer: `Farmer: ${user?.displayName || "Registered Farmer"} (${c.district || "Farm Gate"})`,
-                      destinationNode: c.warehouseName || "Kovai Agro Hub & Cold Storage",
-                      warehouseName: c.warehouseName || "Kovai Agro Hub & Cold Storage",
-                      status: c.status?.includes("Rejected") ? c.status : "Received & In Storage",
-                      isImmutableIntake: true,
-                      orderNumber: c.orderNumber,
-                      cropId: c.id,
-                      userId: user?.uid,
-                      createdAt: c.harvestDate || new Date().toISOString(),
-                    };
-                    initialItems.unshift(cropInventoryItem);
-                    // Sync to Firestore
-                    saveDocument("inventory", inwardId, cropInventoryItem).catch(() => {});
-                  }
+        // Only for demo accounts, load demo inward feed & crops
+        if (profile?.isDemo) {
+          const inwardFeed = localStorage.getItem("perix_wh_inward_feed");
+          if (inwardFeed) {
+            const parsedInward = JSON.parse(inwardFeed);
+            if (Array.isArray(parsedInward)) {
+              parsedInward.forEach((i) => {
+                if (i && i.id && !existingIds.has(i.id)) {
+                  existingIds.add(i.id);
+                  initialItems.unshift({
+                    ...i,
+                    isImmutableIntake: true,
+                  });
                 }
               });
             }
           }
-        });
 
-        if (initialItems.length > 0) {
-          setItems(initialItems);
+          ["perix_crops_farmer", "perix_crops_global"].forEach((cropKey) => {
+            const cachedCrops = localStorage.getItem(cropKey);
+            if (cachedCrops) {
+              const parsedCrops = JSON.parse(cachedCrops);
+              if (Array.isArray(parsedCrops)) {
+                parsedCrops.forEach((c) => {
+                  const givenKg = Number(c.goodsGivenToWarehouseKg ?? c.quantity ?? 0);
+                  if (givenKg > 0) {
+                    const inwardId = `inv-crop-${c.id}`;
+                    if (!existingIds.has(inwardId)) {
+                      existingIds.add(inwardId);
+                      const cropInventoryItem: InventoryItem = {
+                        id: inwardId,
+                        commodity: c.name,
+                        quantity: givenKg,
+                        qualityGrade: c.qualityGrade || "A - Premium",
+                        buyPrice: Number(c.procurementPricePerKg || 34.0),
+                        sellPrice: Math.round(Number(c.procurementPricePerKg || 34.0) * 1.15),
+                        storageType: c.storageType || "cold_storage",
+                        coldChain: c.storageType === "cold_storage",
+                        expiryDays: c.storageType === "cold_storage" ? 14 : 7,
+                        sourceFarmer: `Farmer: ${user?.displayName || "Registered Farmer"} (${c.district || "Farm Gate"})`,
+                        destinationNode: c.warehouseName || "Kovai Agro Hub & Cold Storage",
+                        warehouseName: c.warehouseName || "Kovai Agro Hub & Cold Storage",
+                        status: c.status?.includes("Rejected") ? c.status : "Received & In Storage",
+                        isImmutableIntake: true,
+                        orderNumber: c.orderNumber,
+                        cropId: c.id,
+                        userId: user?.uid,
+                        createdAt: c.harvestDate || new Date().toISOString(),
+                      };
+                      initialItems.unshift(cropInventoryItem);
+                    }
+                  }
+                });
+              }
+            }
+          });
         }
+
+        setItems(initialItems);
       } catch (err) {
         console.warn("Inventory storage read error:", err);
       }
     }
-  }, [storageKey, user]);
+  }, [storageKey, user, profile?.isDemo]);
 
   // 2. Real-time Firestore sync for Inventory
   useEffect(() => {
     const unsubscribe = subscribeCollection<InventoryItem>("inventory", (dbItems) => {
-      if (dbItems && dbItems.length > 0) {
-        setItems((prev) => {
-          const map = new Map<string, InventoryItem>();
-          prev.forEach((i) => {
-            if (i.id) map.set(i.id, i);
-          });
-          dbItems.forEach((i) => {
-            if (i.id) map.set(i.id, { ...(map.get(i.id) || {}), ...i });
-          });
-          const merged = Array.from(map.values());
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(merged));
-            } catch {}
-          }
-          return merged;
+      if (dbItems) {
+        const isAdmin = profile?.role === "admin";
+        const relevantItems = isAdmin
+          ? dbItems
+          : user?.uid
+          ? dbItems.filter(
+              (i) =>
+                i.userId === user.uid ||
+                (profile?.warehouseName && i.destinationNode === profile.warehouseName) ||
+                (profile?.displayName && i.sourceFarmer?.includes(profile.displayName))
+            )
+          : [];
+
+        const map = new Map<string, InventoryItem>();
+        relevantItems.forEach((i) => {
+          if (i.id) map.set(i.id, i);
         });
+        const merged = Array.from(map.values());
+        setItems(merged);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(merged));
+          } catch {}
+        }
       }
     });
 
     return () => unsubscribe();
-  }, [storageKey]);
+  }, [storageKey, user, profile]);
 
-  // 3. Fetch from Backend REST API
+  // 3. Fetch from Backend REST API (Demo mode only)
   useEffect(() => {
     let isMounted = true;
-    async function fetchBackendInventory() {
-      try {
-        const backendItems = await apiClient.inventory.getMandiInventory();
-        if (isMounted && backendItems && Array.isArray(backendItems) && backendItems.length > 0) {
-          setItems((prev) => {
-            const existingIds = new Set(prev.map((i) => i.id));
-            const fresh = backendItems.filter((i: any) => !existingIds.has(i.id));
-            return [...prev, ...fresh];
-          });
+    if (profile?.isDemo) {
+      async function fetchBackendInventory() {
+        try {
+          const backendItems = await apiClient.inventory.getMandiInventory();
+          if (isMounted && backendItems && Array.isArray(backendItems) && backendItems.length > 0) {
+            setItems((prev) => {
+              const existingIds = new Set(prev.map((i) => i.id));
+              const fresh = backendItems.filter((i: any) => !existingIds.has(i.id));
+              return [...prev, ...fresh];
+            });
+          }
+        } catch (err) {
+          console.warn("Backend fetch fallback:", err);
         }
-      } catch (err) {
-        console.warn("Backend fetch fallback:", err);
       }
+      fetchBackendInventory();
     }
-    fetchBackendInventory();
-  }, []);
+  }, [profile?.isDemo]);
 
   // Handle Standard Inventory Submit
   const handleSubmit = async (e: React.FormEvent) => {

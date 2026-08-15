@@ -127,38 +127,44 @@ export default function CropsPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchBackendCrops() {
-      const backendCrops = await apiClient.crops.getMyCrops();
-      if (isMounted && backendCrops && Array.isArray(backendCrops)) {
-        const normalized: Crop[] = backendCrops.map((c: any) => ({
-          ...c,
-          goodsGivenToWarehouseKg: c.goodsGivenToWarehouseKg !== undefined ? Number(c.goodsGivenToWarehouseKg) : Number(c.quantity || 0),
-          quantity: Number(c.quantity || 0),
-        }));
-        setCrops(normalized);
-        localStorage.setItem(storageKey, JSON.stringify(normalized));
+    // For demo users only, fetch default demo crops
+    if (profile?.isDemo) {
+      async function fetchBackendCrops() {
+        const backendCrops = await apiClient.crops.getMyCrops();
+        if (isMounted && backendCrops && Array.isArray(backendCrops) && backendCrops.length > 0) {
+          const normalized: Crop[] = backendCrops.map((c: any) => ({
+            ...c,
+            goodsGivenToWarehouseKg: c.goodsGivenToWarehouseKg !== undefined ? Number(c.goodsGivenToWarehouseKg) : Number(c.quantity || 0),
+            quantity: Number(c.quantity || 0),
+          }));
+          setCrops(normalized);
+          localStorage.setItem(storageKey, JSON.stringify(normalized));
+        }
       }
+      fetchBackendCrops();
     }
 
-    fetchBackendCrops();
-
-    // Firestore Listener
+    // Firestore Real-Time Listener for the Authenticated Farmer
     if (user?.uid) {
       try {
         const q = query(collection(db, "crops"), where("farmerId", "==", user.uid));
         const unsubscribe = onSnapshot(
           q,
           (snapshot) => {
-            if (!snapshot.empty) {
-              const cropsData = snapshot.docs.map((d) => ({
-                id: d.id,
-                ...d.data(),
-                goodsGivenToWarehouseKg: d.data().goodsGivenToWarehouseKg !== undefined ? Number(d.data().goodsGivenToWarehouseKg) : Number(d.data().quantity || 0),
-                quantity: Number(d.data().quantity || 0),
-              })) as Crop[];
-              if (isMounted) {
+            if (isMounted) {
+              if (!snapshot.empty) {
+                const cropsData = snapshot.docs.map((d) => ({
+                  id: d.id,
+                  ...d.data(),
+                  goodsGivenToWarehouseKg: d.data().goodsGivenToWarehouseKg !== undefined ? Number(d.data().goodsGivenToWarehouseKg) : Number(d.data().quantity || 0),
+                  quantity: Number(d.data().quantity || 0),
+                })) as Crop[];
                 setCrops(cropsData);
                 localStorage.setItem(storageKey, JSON.stringify(cropsData));
+              } else if (!profile?.isDemo) {
+                // Newly registered account with 0 crops -> zero mock data
+                setCrops([]);
+                localStorage.setItem(storageKey, JSON.stringify([]));
               }
             }
           },

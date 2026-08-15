@@ -40,7 +40,7 @@ interface DeliveryRoute {
 }
 
 export default function DistributionPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useI18n();
   const [routes, setRoutes] = useState<DeliveryRoute[]>([]);
   const [optimizing, setOptimizing] = useState(false);
@@ -56,7 +56,7 @@ export default function DistributionPage() {
         const cached = localStorage.getItem(storageKey);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setRoutes(parsed);
           }
         }
@@ -69,28 +69,30 @@ export default function DistributionPage() {
   // 2. Real-time Firestore sync for distribution_routes
   useEffect(() => {
     const unsubscribe = subscribeCollection<DeliveryRoute>("distribution_routes", (dbRoutes) => {
-      if (dbRoutes && dbRoutes.length > 0) {
-        setRoutes((prev) => {
-          const map = new Map<string, DeliveryRoute>();
-          prev.forEach((r) => {
-            if (r.id) map.set(r.id, r);
-          });
-          dbRoutes.forEach((r) => {
-            if (r.id) map.set(r.id, { ...(map.get(r.id) || {}), ...r });
-          });
-          const merged = Array.from(map.values());
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(merged));
-            } catch {}
-          }
-          return merged;
+      if (dbRoutes) {
+        const isAdmin = profile?.role === "admin";
+        const relevantRoutes = isAdmin
+          ? dbRoutes
+          : user?.uid
+          ? dbRoutes.filter((r) => r.userId === user.uid)
+          : [];
+
+        const map = new Map<string, DeliveryRoute>();
+        relevantRoutes.forEach((r) => {
+          if (r.id) map.set(r.id, r);
         });
+        const merged = Array.from(map.values());
+        setRoutes(merged);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(merged));
+          } catch {}
+        }
       }
     });
 
     return () => unsubscribe();
-  }, [storageKey]);
+  }, [storageKey, user, profile]);
 
   const [form, setForm] = useState({
     vehicleNo: "TN-38-BZ-4109 (Reefer 3.5T)",

@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import Link from "next/link";
 import {
   TrendingUp,
   Leaf,
@@ -8,10 +12,12 @@ import {
   Scale,
   Sparkles,
   BarChart3,
-  PieChart as PieIcon,
   ShieldCheck,
   Award,
   Globe2,
+  Package,
+  Plus,
+  ArrowRight,
 } from "lucide-react";
 import {
   AreaChart,
@@ -27,26 +33,123 @@ import {
 } from "recharts";
 import { useI18n } from "@/lib/i18n-context";
 
-const DUAL_KPI_TRENDS = [
-  { month: "Jan", wastePreventedKg: 420, revenueRecovered: 38000, co2SavedKg: 840 },
-  { month: "Feb", wastePreventedKg: 680, revenueRecovered: 59000, co2SavedKg: 1360 },
-  { month: "Mar", wastePreventedKg: 950, revenueRecovered: 84000, co2SavedKg: 1900 },
-  { month: "Apr", wastePreventedKg: 1320, revenueRecovered: 118000, co2SavedKg: 2640 },
-  { month: "May", wastePreventedKg: 1780, revenueRecovered: 162000, co2SavedKg: 3560 },
-  { month: "Jun", wastePreventedKg: 2150, revenueRecovered: 198000, co2SavedKg: 4300 },
-  { month: "Jul", wastePreventedKg: 2680, revenueRecovered: 245000, co2SavedKg: 5360 },
-];
-
-const NODE_CONTRIBUTIONS = [
-  { node: "Farmers", rebalancedKg: 980, revenue: 88000 },
-  { node: "Mandi Agents", rebalancedKg: 1450, revenue: 132000 },
-  { node: "Wholesalers", rebalancedKg: 2100, revenue: 190000 },
-  { node: "Retailers", rebalancedKg: 1650, revenue: 148000 },
-];
-
 export default function AnalyticsPage() {
+  const { user, profile } = useAuth();
   const { t } = useI18n();
   const [timeRange, setTimeRange] = useState("7m");
+  const [crops, setCrops] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
+
+  // 1. Fetch User / Mesh Data
+  useEffect(() => {
+    let isMounted = true;
+    const cropKey = `perix_crops_${user?.uid || "farmer"}`;
+    const orderKey = `perix_orders_${user?.uid || "global"}`;
+
+    if (typeof window !== "undefined") {
+      try {
+        const c = localStorage.getItem(cropKey);
+        if (c && isMounted) setCrops(JSON.parse(c) || []);
+        const o = localStorage.getItem(orderKey);
+        if (o && isMounted) setOrders(JSON.parse(o) || []);
+      } catch {}
+    }
+
+    if (user?.uid) {
+      try {
+        const qC = query(collection(db, "crops"), where("farmerId", "==", user.uid));
+        const unC = onSnapshot(qC, (snap) => {
+          if (isMounted) setCrops(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        });
+
+        const qO = query(collection(db, "orders"));
+        const unO = onSnapshot(qO, (snap) => {
+          if (isMounted) setOrders(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        });
+
+        const qI = query(collection(db, "inventory"));
+        const unI = onSnapshot(qI, (snap) => {
+          if (isMounted) setInventory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        });
+
+        return () => {
+          isMounted = false;
+          unC();
+          unO();
+          unI();
+        };
+      } catch {}
+    }
+  }, [user?.uid]);
+
+  // Dynamic calculations
+  const totalWasteDivertedKg = useMemo(() => {
+    const fromCrops = crops.reduce((sum, c) => {
+      return sum + (c.storageType === "cold_storage" ? Math.round(Number(c.quantity || 0) * 0.15) : 0);
+    }, 0);
+    const fromOrders = orders.reduce((sum, o) => {
+      return sum + (o.escrowStatus === "completed" || o.escrowStatus === "in_transit" ? Math.round(Number(o.quantityKg || 0) * 0.2) : 0);
+    }, 0);
+    return fromCrops + fromOrders;
+  }, [crops, orders]);
+
+  const totalRecoveredRevenue = useMemo(() => {
+    const fromCrops = crops.reduce((sum, c) => {
+      const kg = Number(c.goodsGivenToWarehouseKg ?? c.quantity ?? 0);
+      const price = Number(c.procurementPricePerKg || 34.0);
+      return sum + kg * price;
+    }, 0);
+    const fromOrders = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    return fromCrops + fromOrders;
+  }, [crops, orders]);
+
+  const co2AbatedTonnes = ((totalWasteDivertedKg * 2.0) / 1000).toFixed(2);
+
+  // Dynamic Dual-KPI monthly trend from actual transactions
+  const dualKpiTrends = useMemo(() => {
+    if (crops.length === 0 && orders.length === 0) return [];
+    const monthMap: Record<string, { waste: number; rev: number }> = {};
+    crops.forEach((c) => {
+      const m = new Date(c.harvestDate || new Date()).toLocaleString("en-US", { month: "short" }) || "Aug";
+      if (!monthMap[m]) monthMap[m] = { waste: 0, rev: 0 };
+      const kg = Number(c.quantity || 0);
+      monthMap[m].waste += Math.round(kg * 0.15);
+      monthMap[m].rev += kg * Number(c.procurementPricePerKg || 34.0);
+    });
+    orders.forEach((o) => {
+      const m = new Date(o.createdAt || new Date()).toLocaleString("en-US", { month: "short" }) || "Aug";
+      if (!monthMap[m]) monthMap[m] = { waste: 0, rev: 0 };
+      monthMap[m].waste += Math.round(Number(o.quantityKg || 0) * 0.2);
+      monthMap[m].rev += Number(o.totalAmount || 0);
+    });
+    return Object.entries(monthMap).map(([month, v]) => ({
+      month,
+      wastePreventedKg: v.waste,
+      revenueRecovered: v.rev,
+      co2SavedKg: Math.round(v.waste * 2.0),
+    }));
+  }, [crops, orders]);
+
+  // Dynamic Node Contributions
+  const nodeContributions = useMemo(() => {
+    const farmerKg = crops.reduce((s, c) => s + Number(c.quantity || 0), 0);
+    const farmerRev = crops.reduce((s, c) => s + Number(c.quantity || 0) * Number(c.procurementPricePerKg || 34.0), 0);
+
+    const mandiKg = inventory.reduce((s, i) => s + Number(i.quantity || 0), 0);
+    const mandiRev = inventory.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.buyPrice || 30), 0);
+
+    const orderKg = orders.reduce((s, o) => s + Number(o.quantityKg || 0), 0);
+    const orderRev = orders.reduce((s, o) => s + Number(o.totalAmount || 0), 0);
+
+    if (farmerKg === 0 && mandiKg === 0 && orderKg === 0) return [];
+
+    return [
+      { node: "Farmers", rebalancedKg: farmerKg, revenue: farmerRev },
+      { node: "Mandi Agents", rebalancedKg: mandiKg, revenue: mandiRev },
+      { node: "Wholesalers & B2B", rebalancedKg: orderKg, revenue: orderRev },
+    ];
+  }, [crops, inventory, orders]);
 
   return (
     <div className="page-container">
@@ -83,9 +186,9 @@ export default function AnalyticsPage() {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div>
               <p className="kpi-label">Cumulative Waste Diverted</p>
-              <p className="kpi-value" style={{ color: "var(--primary)" }}>9,980 kg</p>
+              <p className="kpi-value" style={{ color: "var(--primary)" }}>{totalWasteDivertedKg.toLocaleString()} kg</p>
               <div className="kpi-trend up">
-                <TrendingUp size={14} /> <span>+38.5% improvement vs baseline</span>
+                <TrendingUp size={14} /> <span>{totalWasteDivertedKg > 0 ? "+100% active prevention" : "Zero baseline (new account)"}</span>
               </div>
             </div>
             <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(46,125,50,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -98,9 +201,9 @@ export default function AnalyticsPage() {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div>
               <p className="kpi-label">Recovered Revenue Value</p>
-              <p className="kpi-value">₹9,04,000</p>
+              <p className="kpi-value">₹{totalRecoveredRevenue.toLocaleString()}</p>
               <div className="kpi-trend up">
-                <TrendingUp size={14} /> <span>₹2.45L recovered this month</span>
+                <TrendingUp size={14} /> <span>{totalRecoveredRevenue > 0 ? "Total transaction value" : "₹0 starting balance"}</span>
               </div>
             </div>
             <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(255,152,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -113,7 +216,7 @@ export default function AnalyticsPage() {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div>
               <p className="kpi-label">CO₂ Emissions Abated</p>
-              <p className="kpi-value" style={{ color: "#2196F3" }}>19.96 Tonnes</p>
+              <p className="kpi-value" style={{ color: "#2196F3" }}>{co2AbatedTonnes} Tonnes</p>
               <div className="kpi-trend up">
                 <Globe2 size={14} /> <span>Direct landfill methane avoidance</span>
               </div>
@@ -154,35 +257,52 @@ export default function AnalyticsPage() {
           <span className="badge badge-success">Live Synchronization</span>
         </div>
 
-        <ResponsiveContainer width="100%" height={320}>
-          <AreaChart data={DUAL_KPI_TRENDS}>
-            <defs>
-              <linearGradient id="wasteGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2E7D32" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#2E7D32" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF9800" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#FF9800" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="month" stroke="var(--text-tertiary)" fontSize={12} />
-            <YAxis yAxisId="left" stroke="var(--text-tertiary)" fontSize={12} />
-            <YAxis yAxisId="right" orientation="right" stroke="var(--text-tertiary)" fontSize={12} />
-            <Tooltip
-              contentStyle={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "8px",
-                boxShadow: "var(--shadow-lg)",
-              }}
-            />
-            <Legend />
-            <Area yAxisId="left" type="monotone" dataKey="wastePreventedKg" stroke="#2E7D32" fill="url(#wasteGrad)" strokeWidth={3} name="Food Saved (kg)" />
-            <Area yAxisId="right" type="monotone" dataKey="revenueRecovered" stroke="#FF9800" fill="url(#revGrad)" strokeWidth={3} name="Revenue Recovered (₹)" />
-          </AreaChart>
-        </ResponsiveContainer>
+        {dualKpiTrends.length === 0 ? (
+          <div style={{ padding: "56px 20px", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "12px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(46,125,50,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+              <Leaf size={24} color="var(--primary)" />
+            </div>
+            <h4 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "6px" }}>
+              No Waste Recovery History Yet
+            </h4>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", maxWidth: "440px", margin: "0 auto 18px" }}>
+              As crops are registered, stored in cold chains, and transacted across the mesh, dynamic correlation curves will render here in real time.
+            </p>
+            <Link href="/dashboard/crops" className="btn btn-primary btn-sm">
+              <Plus size={16} /> Register First Produce
+            </Link>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={320}>
+            <AreaChart data={dualKpiTrends}>
+              <defs>
+                <linearGradient id="wasteGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2E7D32" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#2E7D32" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FF9800" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#FF9800" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" stroke="var(--text-tertiary)" fontSize={12} />
+              <YAxis yAxisId="left" stroke="var(--text-tertiary)" fontSize={12} />
+              <YAxis yAxisId="right" orientation="right" stroke="var(--text-tertiary)" fontSize={12} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  boxShadow: "var(--shadow-lg)",
+                }}
+              />
+              <Legend />
+              <Area yAxisId="left" type="monotone" dataKey="wastePreventedKg" stroke="#2E7D32" fill="url(#wasteGrad)" strokeWidth={3} name="Food Saved (kg)" />
+              <Area yAxisId="right" type="monotone" dataKey="revenueRecovered" stroke="#FF9800" fill="url(#revGrad)" strokeWidth={3} name="Revenue Recovered (₹)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Network Tier Rebalancing Breakdown */}
@@ -191,44 +311,57 @@ export default function AnalyticsPage() {
           <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "16px" }}>
             Rebalanced Volume by Supply Chain Node
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={NODE_CONTRIBUTIONS}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="node" stroke="var(--text-tertiary)" fontSize={12} />
-              <YAxis stroke="var(--text-tertiary)" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Bar dataKey="rebalancedKg" fill="#4CAF50" radius={[6, 6, 0, 0]} name="Rebalanced (kg)" />
-            </BarChart>
-          </ResponsiveContainer>
+          {nodeContributions.length === 0 ? (
+            <div style={{ padding: "36px 16px", textAlign: "center", color: "var(--text-secondary)" }}>
+              <p style={{ fontSize: "13px" }}>No node transactions recorded yet.</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={nodeContributions}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="node" stroke="var(--text-tertiary)" fontSize={12} />
+                <YAxis stroke="var(--text-tertiary)" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Bar dataKey="rebalancedKg" fill="#4CAF50" radius={[6, 6, 0, 0]} name="Rebalanced (kg)" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         <div className="card" style={{ padding: "24px" }}>
           <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "16px" }}>
             Recovered Capital by Supply Chain Tier
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={NODE_CONTRIBUTIONS}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="node" stroke="var(--text-tertiary)" fontSize={12} />
-              <YAxis stroke="var(--text-tertiary)" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Bar dataKey="revenue" fill="#FF9800" radius={[6, 6, 0, 0]} name="Value (₹)" />
-            </BarChart>
-          </ResponsiveContainer>
+          {nodeContributions.length === 0 ? (
+            <div style={{ padding: "36px 16px", textAlign: "center", color: "var(--text-secondary)" }}>
+              <p style={{ fontSize: "13px" }}>No capital recovery records yet.</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={nodeContributions}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="node" stroke="var(--text-tertiary)" fontSize={12} />
+                <YAxis stroke="var(--text-tertiary)" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "8px",
+                  }}
+                />
+                <Bar dataKey="revenue" fill="#FF9800" radius={[6, 6, 0, 0]} name="Value (₹)" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>
   );
 }
+

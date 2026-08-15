@@ -94,80 +94,85 @@ export default function WholesalerPage() {
           }
         }
 
-        // Load confirmed dispatches sent from warehouses
-        const whFeed = localStorage.getItem("perix_wholesaler_received_feed");
-        if (whFeed) {
-          const parsedFeed = JSON.parse(whFeed);
-          if (Array.isArray(parsedFeed)) {
-            parsedFeed.forEach((f) => {
-              if (f && f.id && !seenIds.has(f.id)) {
-                seenIds.add(f.id);
-                loadedItems.unshift(f);
-              }
-            });
+        // Only for demo accounts, load confirmed dispatches from demo feed
+        if (profile?.isDemo) {
+          const whFeed = localStorage.getItem("perix_wholesaler_received_feed");
+          if (whFeed) {
+            const parsedFeed = JSON.parse(whFeed);
+            if (Array.isArray(parsedFeed)) {
+              parsedFeed.forEach((f) => {
+                if (f && f.id && !seenIds.has(f.id)) {
+                  seenIds.add(f.id);
+                  loadedItems.unshift(f);
+                }
+              });
+            }
           }
+
+          apiClient.inventory.getWholesalerInventory().then((res) => {
+            if (res && Array.isArray(res) && res.length > 0) {
+              setItems((prev) => {
+                const ids = new Set(prev.map((p) => p.id));
+                const fresh = res
+                  .filter((r: any) => !ids.has(r.id))
+                  .map((r: any) => ({
+                    id: r.id,
+                    commodity: r.commodity,
+                    quantity: Number(r.quantity || 0),
+                    qualityGrade: r.qualityGrade || "A - Premium",
+                    buyPrice: Number(r.buyPrice || 34),
+                    sellPrice: Number(r.sellPrice || 44),
+                    storageType: r.storageType || "cold_storage",
+                    coldChain: !!r.coldChain,
+                    expiryDays: Number(r.expiryDays || 8),
+                    originWarehouse: r.destinationNode || "Warehouse Central Depot",
+                    status: "Received & In Cold Storage",
+                    receivedDate: new Date().toISOString().split("T")[0],
+                  }));
+                return [...fresh, ...prev];
+              });
+            }
+          });
         }
 
-        // Also check wholesaler backend inventory API if available
-        apiClient.inventory.getWholesalerInventory().then((res) => {
-          if (res && Array.isArray(res) && res.length > 0) {
-            setItems((prev) => {
-              const ids = new Set(prev.map((p) => p.id));
-              const fresh = res
-                .filter((r: any) => !ids.has(r.id))
-                .map((r: any) => ({
-                  id: r.id,
-                  commodity: r.commodity,
-                  quantity: Number(r.quantity || 0),
-                  qualityGrade: r.qualityGrade || "A - Premium",
-                  buyPrice: Number(r.buyPrice || 34),
-                  sellPrice: Number(r.sellPrice || 44),
-                  storageType: r.storageType || "cold_storage",
-                  coldChain: !!r.coldChain,
-                  expiryDays: Number(r.expiryDays || 8),
-                  originWarehouse: r.destinationNode || "Warehouse Central Depot",
-                  status: "Received & In Cold Storage",
-                  receivedDate: new Date().toISOString().split("T")[0],
-                }));
-              return [...fresh, ...prev];
-            });
-          }
-        });
-
-        if (loadedItems.length > 0) {
-          setItems(loadedItems);
-        }
+        setItems(loadedItems);
       } catch (err) {
         console.warn("Wholesaler feed read error:", err);
       }
     }
-  }, [storageKey, user]);
+  }, [storageKey, user, profile?.isDemo]);
 
   // 2. Real-time Firestore sync for wholesaler_inventory
   useEffect(() => {
     const unsubscribe = subscribeCollection<WholesalerReceivedItem>("wholesaler_inventory", (dbItems) => {
-      if (dbItems && dbItems.length > 0) {
-        setItems((prev) => {
-          const map = new Map<string, WholesalerReceivedItem>();
-          prev.forEach((i) => {
-            if (i.id) map.set(i.id, i);
-          });
-          dbItems.forEach((i) => {
-            if (i.id) map.set(i.id, { ...(map.get(i.id) || {}), ...i });
-          });
-          const merged = Array.from(map.values());
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(merged));
-            } catch {}
-          }
-          return merged;
+      if (dbItems) {
+        const isAdmin = profile?.role === "admin";
+        const relevantItems = isAdmin
+          ? dbItems
+          : user?.uid
+          ? dbItems.filter((i) =>
+              i.userId === user.uid ||
+              (profile?.companyName && (i.destinationNode?.includes(profile.companyName) || i.allocatedRetailer?.includes(profile.companyName))) ||
+              (profile?.displayName && i.destinationNode?.includes(profile.displayName))
+            )
+          : [];
+
+        const map = new Map<string, WholesalerReceivedItem>();
+        relevantItems.forEach((i) => {
+          if (i.id) map.set(i.id, i);
         });
+        const merged = Array.from(map.values());
+        setItems(merged);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(merged));
+          } catch {}
+        }
       }
     });
 
     return () => unsubscribe();
-  }, [storageKey]);
+  }, [storageKey, user, profile]);
 
   // Handle Allocate to Supermarket / Retail Store
   const handleConfirmRetailAllocation = async () => {

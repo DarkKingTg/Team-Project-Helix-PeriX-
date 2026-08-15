@@ -39,7 +39,7 @@ interface OrderTransfer {
 }
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useI18n();
   const [orders, setOrders] = useState<OrderTransfer[]>([]);
   const [filter, setFilter] = useState<string>("all");
@@ -74,19 +74,25 @@ export default function OrdersPage() {
           }
         }
 
-        // 2. Read global and farmer orders
-        ["perix_orders_global", "perix_orders_farmer"].forEach((key) => {
-          const cached = localStorage.getItem(key);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed)) {
-              parsed.forEach((o) => addOrderIfUnique(o));
+        // 2. Read global and farmer orders (only for demo accounts)
+        if (profile?.isDemo) {
+          ["perix_orders_global", "perix_orders_farmer"].forEach((key) => {
+            const cached = localStorage.getItem(key);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed)) {
+                parsed.forEach((o) => addOrderIfUnique(o));
+              }
             }
-          }
-        });
+          });
+        }
 
-        // 3. Derive orders from logged farmer crops if any exist
-        ["perix_crops_" + (user?.uid || "farmer"), "perix_crops_farmer", "perix_crops_global"].forEach((cropKey) => {
+        // 3. Derive orders from user's logged farmer crops if any exist
+        const cropKeys = profile?.isDemo
+          ? ["perix_crops_" + (user?.uid || "farmer"), "perix_crops_farmer", "perix_crops_global"]
+          : user?.uid ? ["perix_crops_" + user.uid] : [];
+
+        cropKeys.forEach((cropKey) => {
           const cachedCrops = localStorage.getItem(cropKey);
           if (cachedCrops) {
             const parsedCrops = JSON.parse(cachedCrops);
@@ -133,45 +139,48 @@ export default function OrdersPage() {
           }
         });
 
-        if (allOrders.length > 0) {
-          setOrders(allOrders);
-        }
+        setOrders(allOrders);
       } catch (err) {
         console.warn("Orders cache read error:", err);
       }
     }
-  }, [storageKey, user]);
+  }, [storageKey, user, profile?.isDemo]);
 
   // 2. Real-time Firestore sync
   useEffect(() => {
     const unsubscribe = subscribeCollection<OrderTransfer>("orders", (dbOrders) => {
-      if (dbOrders && dbOrders.length > 0) {
-        setOrders((prev) => {
-          const map = new Map<string, OrderTransfer>();
-          // Put local/previous orders first
-          prev.forEach((o) => {
-            if (o.id) map.set(o.id, o);
-            if (o.orderNumber) map.set(o.orderNumber, o);
-          });
-          // Merge with Firestore orders (Firestore takes precedence)
-          dbOrders.forEach((o) => {
-            const key = o.id || o.orderNumber;
-            if (key) map.set(key, { ...(map.get(key) || {}), ...o });
-          });
-          const merged = Array.from(new Set(Array.from(map.values())));
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem(storageKey, JSON.stringify(merged));
-              localStorage.setItem("perix_orders_global", JSON.stringify(merged));
-            } catch {}
-          }
-          return merged;
+      if (dbOrders) {
+        // If non-demo user, only take orders owned or addressed to this user (or all if admin)
+        const isAdmin = profile?.role === "admin";
+        const relevantOrders = isAdmin
+          ? dbOrders
+          : user?.uid
+          ? dbOrders.filter(
+              (o) =>
+                o.userId === user.uid ||
+                (profile?.displayName && (o.senderNode?.includes(profile.displayName) || o.receiverNode?.includes(profile.displayName))) ||
+                (profile?.warehouseName && o.receiverNode?.includes(profile.warehouseName)) ||
+                (profile?.companyName && o.receiverNode?.includes(profile.companyName))
+            )
+          : [];
+
+        const map = new Map<string, OrderTransfer>();
+        relevantOrders.forEach((o) => {
+          const key = o.id || o.orderNumber;
+          if (key) map.set(key, o);
         });
+        const merged = Array.from(map.values());
+        setOrders(merged);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(merged));
+          } catch {}
+        }
       }
     });
 
     return () => unsubscribe();
-  }, [storageKey]);
+  }, [storageKey, user, profile]);
 
   const filteredOrders = filter === "all" ? orders : orders.filter((o) => o.escrowStatus === filter);
 
